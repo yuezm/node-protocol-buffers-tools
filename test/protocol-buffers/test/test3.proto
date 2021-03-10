@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package test3;
+
+enum Type{
+  DEFAULT = 0;
+  TEST = 1;
+  QA = 2;
+}

@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package test1;
+
+import "test/test3.proto";
+
+message test1_name{
+  string name = 1;
+  uint32 age = 2;
+  test3.Type type = 3;
+}
