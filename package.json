@@ -45,5 +45,10 @@
     "hooks": {
       "pre-commit": "npm run lint"
     }
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-lerna-changelog"
+    }
   }
 }
