@@ -1,16 +1,25 @@
 {
   "compilerOptions": {
     "module": "commonjs",
+    "target": "ES6",
+    "allowJs": true,
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
-    "target": "es2017",
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
     "incremental": true,
-    "paths": {}
+    "moduleResolution": "Node",
+    "lib": [
+      "ESNext"
+    ],
+    "paths": {
+      "Common/*": [
+        "packages/common/*"
+      ]
+    }
   }
 }
