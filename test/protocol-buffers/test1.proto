@@ -1,11 +1,33 @@
 syntax = "proto3";
 
+/**
+  测试多行注释
+ */
+
+// 测试单行注释
+
 package test1;
 
 import "test/test3.proto";
 
+service TestService{
+  rpc Once(test1_name) returns (test2_name);
+  rpc Tow(test1_name) returns (test2_name);
+}
+
 message test1_name{
   string name = 1;
-  uint32 age = 2;
+  uint32 package = 2;
   test3.Type type = 3;
+}
+
+message test2_name{
+  string name = ;
+  uint32 package = 2;
+  test3.Type type = 3;
+}
+
+enum test_enum {
+  DEFAULT = MAX;
+  ONCE = 1;
 }
