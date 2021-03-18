@@ -1,8 +1,9 @@
-import { IToken, TokenType } from './lib/define';
+import { TokenType } from './lib/define';
 import Tokenizer from './lib/tokenizer';
 
+export * from './lib/define';
 
-class Token implements IToken {
+export class Token implements Token {
   type: TokenType;
   value: string;
   line: number;
@@ -16,9 +17,9 @@ class Token implements IToken {
   }
 }
 
-export function tokenize(source: string): IToken[] {
+export function tokenize(source: string): Token[] {
   const t = new Tokenizer(source);
-  const result: IToken[] = [];
+  const result: Token[] = [];
 
   let isInBlock = false;
   let isSmallBracket = false;

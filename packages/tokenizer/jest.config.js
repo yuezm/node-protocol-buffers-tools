@@ -6,7 +6,7 @@ module.exports = {
     "json",
     "ts"
   ],
-  "rootDir": "test",
+  "rootDir": "__tests__",
   "testRegex": ".*\\.spec\\.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"

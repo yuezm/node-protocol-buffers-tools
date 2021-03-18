@@ -1,12 +1,11 @@
 import * as types from './types';
 import { SyntaxKind } from './define';
+import { Node } from './types';
 
+
+// 数字字面量
 export function createNumericLiteral(text: string, parent: types.Node | null = null): types.NumericLiteral {
   return new types.NumericLiteral(text, parent);
-}
-
-export function createStringLiteral(text: string, parent: types.Node | null = null): types.StringLiteral {
-  return new types.StringLiteral(text, parent);
 }
 
 // 创建标识符
@@ -18,12 +17,12 @@ export function createExpression(escapedText: string, kind?: SyntaxKind, parent:
   return new types.Expression(createIdentifier(escapedText), kind, parent);
 }
 
-// 创建service声明
-export function createServiceDeclaration(name: string, members: types.FunctionDeclaration[] = [], parent: types.Node | null = null) {
-  return new types.ServiceDeclaration(createIdentifier(name), members, parent)
-}
-
 // 创建函数声明
 export function createFunctionDeclaration(name: string, parameters: string, returns: string, parent: types.ServiceDeclaration) {
   return new types.FunctionDeclaration(createIdentifier(name), createIdentifier(parameters), createIdentifier(returns), parent)
+}
+
+
+export function isNode(n: any): boolean {
+  return n instanceof Node;
 }

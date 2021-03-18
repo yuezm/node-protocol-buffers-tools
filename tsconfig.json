@@ -19,6 +19,12 @@
     "paths": {
       "Common/*": [
         "packages/common/*"
+      ],
+      "Parser/*": [
+        "packages/parser/*"
+      ],
+      "Tokenizer/*": [
+        "packages/tokenizer/*"
       ]
     }
   }

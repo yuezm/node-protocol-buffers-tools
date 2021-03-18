@@ -22,12 +22,12 @@ message test1_name{
 }
 
 message test2_name{
-  string name = ;
+  string name = 0x1;
   uint32 package = 2;
   test3.Type type = 3;
 }
 
 enum test_enum {
-  DEFAULT = MAX;
-  ONCE = 1;
+  DEFAULT = 0;
+  ONCE = 0x1;
 }

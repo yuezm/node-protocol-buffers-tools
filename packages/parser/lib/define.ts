@@ -1,7 +1,8 @@
-import { IToken } from 'tokenizer/lib/define';
+import { Token } from 'tokenizer';
+import { Node } from './types';
 
-export interface IParserOptions {
-  source: IToken[];
+export interface ParserOptions {
+  source: Token[];
   filename: string;
 }
 
@@ -17,7 +18,6 @@ export enum SyntaxKind {
 
   Identifier,
 
-  Literal,
   NumericLiteral,
   StringLiteral,
 
@@ -34,5 +34,9 @@ export enum NodeFlags {
   BlockScoped = 1,
 }
 
-
+export interface Visitor {
+  visitor: Partial<{
+    [attr in SyntaxKind]: (node: Node) => void;
+  }>;
+}
 

@@ -1,5 +1,5 @@
-import { IParserOptions, SyntaxKind } from './define';
-import { IToken } from 'tokenizer/lib/define';
+import { ParserOptions, SyntaxKind } from './define';
+import { Token } from 'tokenizer';
 import { createExpression, createFunctionDeclaration, createIdentifier, createNumericLiteral } from './helper';
 import {
   EnumDeclaration,
@@ -26,7 +26,7 @@ const TYPE_REF_RE = /^(?:\.?[a-zA-Z_][a-zA-Z_0-9]*)(?:\.[a-zA-Z_][a-zA-Z_0-9]*)*
 const FQ_TYPE_REF_RE = /^(?:\.[a-zA-Z_][a-zA-Z_0-9]*)+$/;
 
 export default class Parser {
-  source: IToken[];
+  source: Token[];
 
 
   filename: string;
@@ -35,28 +35,28 @@ export default class Parser {
 
   offset: number;
 
-  constructor(options: IParserOptions) {
+  constructor(options: ParserOptions) {
     this.source = options.source;
     this.filename = options.filename;
 
     this.offset = 0;
   }
 
-  illegal(token: IToken): Error {
+  illegal(token: Token): Error {
     return Error(`illegal ${ token.value } in ${ this.filename } on line ${ token.line }`);
   }
 
   // 返回当前的Token，并移动游标
-  next(): IToken | null {
+  next(): Token | null {
     return this.offset === this.source.length ? null : this.source[this.offset++];
   }
 
-  prev(): IToken | null {
+  prev(): Token | null {
     return this.offset > 0 ? this.source[this.offset - 1] : null;
   }
 
   // 返回当前的Token
-  now(): IToken | null {
+  now(): Token | null {
     return this.offset === this.source.length ? null : this.source[this.offset];
   }
 
@@ -73,7 +73,7 @@ export default class Parser {
     }
   }
 
-  parseNumber(token: IToken): NumericLiteral {
+  parseNumber(token: Token): NumericLiteral {
     return createNumericLiteral(this.serializeNumber(token).toString())
   }
 
@@ -174,7 +174,7 @@ export default class Parser {
     return new EnumElement(createIdentifier(name.value), this.parseNumber(init), parent);
   }
 
-  serializeNumber(token: IToken): number | string {
+  serializeNumber(token: Token): number | string {
     let { value } = token;
     let sign = 1;
 

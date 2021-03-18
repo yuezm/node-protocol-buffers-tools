@@ -1,9 +1,12 @@
-import { IParserOptions } from './lib/define';
+import { TokenType } from 'tokenizer';
+import { ParserOptions } from './lib/define';
 import Parser from './lib/parser';
-import { TokenType } from 'tokenizer/lib/define';
 import { EnumDeclaration, MessageDeclaration, Module, ServiceDeclaration } from './lib/types';
 
-export function parse(options: IParserOptions) {
+export * from './lib/define';
+export * from './lib/types';
+
+export function parse(options: ParserOptions) {
   const parser = new Parser(options);
 
   const root = new Module(); // 模块根节点，认为每一个文件为一个模块

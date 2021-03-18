@@ -11,6 +11,8 @@ export class Node {
   line: number;
   offset: number;
 
+  visited?: boolean;
+
   constructor(kind: SyntaxKind, parent: Node | null = null, flags: NodeFlags = NodeFlags.Unknown) {
     this.kind = kind;
     this.parent = parent;

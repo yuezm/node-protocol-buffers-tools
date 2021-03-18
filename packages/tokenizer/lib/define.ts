@@ -4,14 +4,3 @@ export enum TokenType {
   SYMBOL = 3, // 例如分号，引号等
   VARIABLE = 4, // 变量
 }
-
-
-export interface IToken {
-  // token
-  type: TokenType;
-  value: string;
-
-  // 记录位置信息
-  line?: number;
-  offset?: number;
-}
