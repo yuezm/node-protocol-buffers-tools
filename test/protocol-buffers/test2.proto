@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+// 为了测试没有定义package的
+
 message test_name{
 
 }

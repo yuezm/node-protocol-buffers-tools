@@ -5,6 +5,7 @@ import { EnumDeclaration, MessageDeclaration, Module, ServiceDeclaration } from 
 
 export * from './lib/define';
 export * from './lib/types';
+export * from './lib/helper';
 
 export function parse(options: ParserOptions) {
   const parser = new Parser(options);

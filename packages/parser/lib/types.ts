@@ -122,7 +122,7 @@ export class EnumElement extends Node {
 
 // 表达式
 export class Expression extends Node {
-  expression: Node; // 表达式的标识
+  expression: Identifier; // 表达式的标识
 
   constructor(expression: Identifier, kind?: SyntaxKind, parent: Node | null = null) {
     super(kind || SyntaxKind.Expression, parent);
@@ -139,6 +139,7 @@ export class PropertyAccessExpression extends Expression {
   }
 }
 
+// 标识符
 export class Identifier extends Node {
   escapedText: string; // 字面量
 

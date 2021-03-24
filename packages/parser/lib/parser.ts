@@ -1,6 +1,6 @@
 import { ParserOptions, SyntaxKind } from './define';
 import { Token } from 'tokenizer';
-import { createExpression, createFunctionDeclaration, createIdentifier, createNumericLiteral } from './helper';
+import { factory } from './helper';
 import {
   EnumDeclaration,
   EnumElement,
@@ -74,7 +74,7 @@ export default class Parser {
   }
 
   parseNumber(token: Token): NumericLiteral {
-    return createNumericLiteral(this.serializeNumber(token).toString())
+    return factory.createNumericLiteral(this.serializeNumber(token).toString())
   }
 
   parsePackage(): Expression {
@@ -83,13 +83,13 @@ export default class Parser {
     if (!TYPE_REF_RE.test(token.value)) throw this.illegal(token);
 
     this.package = token.value;
-    return createExpression(token.value, SyntaxKind.PackageExpression);
+    return factory.createExpression(token.value, SyntaxKind.PackageExpression);
   }
 
   parseImport(): Expression {
     this.skip('"');
     const token = this.next();
-    const syt = createExpression(token.value, SyntaxKind.ImportExpression);
+    const syt = factory.createExpression(token.value, SyntaxKind.ImportExpression);
     this.skip('"');
     return syt;
   }
@@ -108,7 +108,7 @@ export default class Parser {
   parseService(): ServiceDeclaration {
     const token = this.next(); // 进入service
     this.skip('{');
-    return new ServiceDeclaration(createIdentifier(token.value), []);
+    return new ServiceDeclaration(factory.createIdentifier(token.value), []);
   }
 
   parseMethod(parent: ServiceDeclaration | null): FunctionDeclaration {
@@ -127,13 +127,13 @@ export default class Parser {
     this.skip(')');
     this.skip(';');
 
-    return createFunctionDeclaration(name, params, returns, parent);
+    return factory.createFunctionDeclaration(name, params, returns, parent);
   }
 
   parseMessage(): MessageDeclaration {
     const token = this.next();
     this.skip('{');
-    return new MessageDeclaration(createIdentifier(token.value), []);
+    return new MessageDeclaration(factory.createIdentifier(token.value), []);
   }
 
   parseMessageElement(parent: MessageDeclaration | null): MessageElement {
@@ -151,18 +151,18 @@ export default class Parser {
     let typeSyt: Identifier | PropertyAccessExpression;
     if (type.value.includes('\.')) {
       const typeList = type.value.split('\.');
-      typeSyt = new PropertyAccessExpression(createIdentifier(typeList[0]), createIdentifier(typeList[1]));
+      typeSyt = new PropertyAccessExpression(factory.createIdentifier(typeList[0]), factory.createIdentifier(typeList[1]));
     } else {
-      typeSyt = createIdentifier(type.value);
+      typeSyt = factory.createIdentifier(type.value);
     }
 
-    return new MessageElement(createIdentifier(name.value), typeSyt, parent);
+    return new MessageElement(factory.createIdentifier(name.value), typeSyt, parent);
   }
 
   parseEnum(): EnumDeclaration {
     const token = this.next();
     this.skip('{');
-    return new EnumDeclaration(createIdentifier(token.value), [])
+    return new EnumDeclaration(factory.createIdentifier(token.value), [])
   }
 
   parseEnumElement(parent: EnumDeclaration | null): EnumElement {
@@ -171,7 +171,7 @@ export default class Parser {
     this.skip('=');
     const init = this.next();
     this.skip(';');
-    return new EnumElement(createIdentifier(name.value), this.parseNumber(init), parent);
+    return new EnumElement(factory.createIdentifier(name.value), this.parseNumber(init), parent);
   }
 
   serializeNumber(token: Token): number | string {

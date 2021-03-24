@@ -67,6 +67,7 @@ describe('测试 token.ts', () => {
 describe('测试 index.ts', () => {
   it('测试 tokenizer', function () {
     const source = readFileSync(join(__dirname, '../../../test/protocol-buffers/test1.proto')).toString();
+    console.log(tokenize(source));
     expect(tokenize(source)).toBeDefined();
   });
 });
