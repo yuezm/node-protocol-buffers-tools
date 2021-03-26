@@ -2,9 +2,14 @@ import { parse, SyntaxKind } from '../index';
 import { tokenize } from 'tokenizer';
 import { join } from 'path';
 import { readFileSync } from 'fs';
-import { traverse } from 'Parser/lib/visitor';
+import { traverse } from 'Parser/lib/helper/factory';
+import { transform } from "Parser/lib/helper/transform";
+
 
 describe('测试 parser包', () => {
+
+  describe('测试 helper.ts', () => {
+  });
 
   describe('测试 parser.ts', () => {
     it('测试 parse', function () {
@@ -29,9 +34,11 @@ describe('测试 parser包', () => {
     traverse(syt, {
       visitor: {
         [SyntaxKind.ImportExpression](node) {
-          console.log(node);
+          // console.log(node);
         }
       }
     });
+    console.log((syt.body[5] as any).members[2].type)
+    // transform(syt[0]);
   });
 });

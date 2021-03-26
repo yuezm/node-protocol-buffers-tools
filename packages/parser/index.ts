@@ -1,11 +1,20 @@
 import { TokenType } from 'tokenizer';
 import { ParserOptions } from './lib/define';
 import Parser from './lib/parser';
-import { EnumDeclaration, MessageDeclaration, Module, ServiceDeclaration } from './lib/types';
+import { EnumDeclaration, MessageDeclaration, Module, PropertyAccessExpression, ServiceDeclaration } from './lib/types';
 
 export * from './lib/define';
 export * from './lib/types';
-export * from './lib/helper';
+export * from './lib/helper/helper';
+
+import * as factory from './lib/helper/factory';
+import * as transform from './lib/helper/transform';
+import { formatPath } from 'Common/lib/path';
+
+export {
+  factory,
+  transform,
+}
 
 export function parse(options: ParserOptions) {
   const parser = new Parser(options);
@@ -29,7 +38,7 @@ export function parse(options: ParserOptions) {
 
         // 解析包名
         case 'package':
-          root.append(parser.parsePackage());
+          parser.parsePackage();
           break;
 
         // 解析import语法
@@ -92,7 +101,13 @@ export function parse(options: ParserOptions) {
 
   root.filename = options.filename;
   root.syntax = parser.syntax;
-  root.package = parser.package;
 
+  const pkg = parser.package || formatPath(options.filename);
+  if (pkg.includes('\.')) {
+    const typeList = pkg.split('\.');
+    root.package = new PropertyAccessExpression(factory.createIdentifier(typeList[ 0 ]), factory.createIdentifier(typeList[ 1 ]));
+  } else {
+    root.package = factory.createIdentifier(pkg);
+  }
   return root;
 }

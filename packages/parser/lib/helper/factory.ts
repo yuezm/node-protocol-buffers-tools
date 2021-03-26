@@ -1,5 +1,5 @@
 import * as types from 'Parser/lib/types';
-import { SyntaxKind, Visitor } from 'Parser/lib/define';
+import { Visitor } from 'Parser/lib/define';
 import { Identifier, Node, NumericLiteral, ServiceDeclaration } from 'Parser/lib/types';
 import { isNode } from 'Parser/lib/helper/helper';
 
@@ -10,10 +10,6 @@ export function createNumericLiteral(text: string, parent: Node | null = null): 
 // 创建标识符
 export function createIdentifier(escapedText: string, parent: Node | null = null): Identifier {
   return new types.Identifier(escapedText, parent);
-}
-
-export function createExpression(escapedText: string, kind?: SyntaxKind, parent: Node | null = null) {
-  return new types.Expression(createIdentifier(escapedText), kind, parent);
 }
 
 // 创建函数声明

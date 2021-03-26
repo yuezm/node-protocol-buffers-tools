@@ -1,12 +1,12 @@
 import { existsSync, readFileSync } from "fs";
 import { join } from 'path';
 
-import { Expression, Node, parse, SyntaxKind, traverse } from "Parser/";
+import { Expression, Node, parse, SyntaxKind, factory, Module, ImportExpression } from "Parser";
 import { tokenize } from "Tokenizer/";
 import { CliOptions } from "./define";
 
 export class Cli {
-  modules: Node[] = [];
+  modules: Module[] = [];
   options: CliOptions;
 
   static GOOGLE_PATH = join(__dirname, '../../..');
@@ -27,9 +27,9 @@ export class Cli {
   }
 
   parseImport(node: Node) {
-    traverse(node, {
+    factory.traverse(node, {
       visitor: {
-        [SyntaxKind.ImportExpression]: (c: Expression) => {
+        [SyntaxKind.ImportExpression]: (c: ImportExpression) => {
           this.parseByPath(c.expression.escapedText);
         }
       }

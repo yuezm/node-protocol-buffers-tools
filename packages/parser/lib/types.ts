@@ -22,9 +22,9 @@ export class Node {
 
 export class Module extends Node {
   body: Node[]; // 当前模块文件的所有子节点
+  package: Identifier | PropertyAccessExpression;
 
   filename: string;
-  package: string;
   syntax: string;
 
 
@@ -88,7 +88,7 @@ export class MessageElement extends Node {
   type: Identifier | PropertyAccessExpression;
 
   constructor(name: Identifier, type: Identifier | PropertyAccessExpression, parent: Node) {
-    super(SyntaxKind.MessageDeclaration, parent);
+    super(SyntaxKind.MessageElement, parent);
     this.name = name;
     this.type = type;
   }
@@ -99,7 +99,7 @@ export class EnumDeclaration extends Node {
   members: EnumElement[];
 
   constructor(name: Identifier, members: EnumElement[], parent: Node | null = null) {
-    super(SyntaxKind.MessageDeclaration, parent);
+    super(SyntaxKind.EnumDeclaration, parent);
     this.name = name;
     this.members = members;
   }
@@ -114,28 +114,33 @@ export class EnumElement extends Node {
   initializer: NumericLiteral;
 
   constructor(name: Identifier, initializer: NumericLiteral, parent: Node) {
-    super(SyntaxKind.MessageDeclaration, parent);
+    super(SyntaxKind.EnumElement, parent);
     this.name = name;
     this.initializer = initializer;
   }
 }
 
 // 表达式
-export class Expression extends Node {
-  expression: Identifier; // 表达式的标识
+export abstract class Expression extends Node {
+}
 
-  constructor(expression: Identifier, kind?: SyntaxKind, parent: Node | null = null) {
-    super(kind || SyntaxKind.Expression, parent);
+export class ImportExpression extends Expression {
+  expression: Identifier;
+
+  constructor(expression: Identifier, parent: Node | null = null) {
+    super(SyntaxKind.ImportExpression, parent);
     this.expression = expression;
   }
 }
 
 export class PropertyAccessExpression extends Expression {
   name: Identifier;
+  expression: Identifier | PropertyAccessExpression;
 
-  constructor(expression: Identifier, name: Identifier, parent: Node | null = null) {
-    super(expression, SyntaxKind.PropertyAccessExpression, parent);
+  constructor(expression: Identifier | PropertyAccessExpression, name: Identifier, parent: Node | null = null) {
+    super(SyntaxKind.PropertyAccessExpression, parent);
     this.name = name;
+    this.expression = expression;
   }
 }
 

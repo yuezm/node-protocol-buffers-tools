@@ -1,17 +1,19 @@
-import { ParserOptions, SyntaxKind } from './define';
+import { Google_BASE_TYPES, NodeFlags, ParserOptions, SyntaxKind } from './define';
 import { Token } from 'tokenizer';
-import { factory } from './helper';
+import * as factory from './helper/factory';
 import {
   EnumDeclaration,
   EnumElement,
   Expression,
-  FunctionDeclaration, Identifier,
+  FunctionDeclaration,
+  Identifier, ImportExpression,
   MessageDeclaration,
   MessageElement,
   NumericLiteral,
   PropertyAccessExpression,
   ServiceDeclaration
 } from './types';
+import { createIdentifier } from './helper/factory';
 
 
 const BASE_10_RE = /^[1-9][0-9]*$/;
@@ -77,19 +79,17 @@ export default class Parser {
     return factory.createNumericLiteral(this.serializeNumber(token).toString())
   }
 
-  parsePackage(): Expression {
+  parsePackage(): void {
     const token = this.next();
     if (this.package !== undefined) throw this.illegal(token);
     if (!TYPE_REF_RE.test(token.value)) throw this.illegal(token);
-
     this.package = token.value;
-    return factory.createExpression(token.value, SyntaxKind.PackageExpression);
   }
 
   parseImport(): Expression {
     this.skip('"');
     const token = this.next();
-    const syt = factory.createExpression(token.value, SyntaxKind.ImportExpression);
+    const syt = new ImportExpression(factory.createIdentifier(token.value));
     this.skip('"');
     return syt;
   }
@@ -150,13 +150,36 @@ export default class Parser {
     // 确定类型是否为 xx.yy 这样的获取，目前只做两层处理哈，后续在写递归
     let typeSyt: Identifier | PropertyAccessExpression;
     if (type.value.includes('\.')) {
-      const typeList = type.value.split('\.');
-      typeSyt = new PropertyAccessExpression(factory.createIdentifier(typeList[0]), factory.createIdentifier(typeList[1]));
+      typeSyt = this.parsePropertyAccess(type.value);
     } else {
       typeSyt = factory.createIdentifier(type.value);
+      if (!Google_BASE_TYPES.has(type.value)) {
+        typeSyt.flags = NodeFlags.Reference;
+      }
     }
 
     return new MessageElement(factory.createIdentifier(name.value), typeSyt, parent);
+  }
+
+  parsePropertyAccess(s: string): PropertyAccessExpression {
+    const sl = s.split('\.');
+    let i = sl.length - 1;
+    const res = new PropertyAccessExpression(null, createIdentifier(sl[i]));
+    let next = res;
+
+    i--;
+    while (i >= 0) {
+      if (i >= 1) {
+        // 多个属性共建 xx.yy.zz.kk
+        next.expression = new PropertyAccessExpression(null, createIdentifier(sl[i]));
+        next = next.expression;
+      } else {
+        // 单个属性 xx.yy
+        next.expression = createIdentifier(sl[i]);
+      }
+      i--;
+    }
+    return res;
   }
 
   parseEnum(): EnumDeclaration {
@@ -207,5 +230,4 @@ export default class Parser {
     /* istanbul ignore next */
     throw this.illegal(token);
   }
-
 }
