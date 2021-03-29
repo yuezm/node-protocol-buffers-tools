@@ -1,10 +1,9 @@
-import { parse, SyntaxKind } from '../index';
+import { parse } from '../index';
+import { SyntaxKind } from '../lib/define';
 import { tokenize } from 'tokenizer';
 import { join } from 'path';
 import { readFileSync } from 'fs';
 import { traverse } from 'Parser/lib/helper/factory';
-import { transform } from "Parser/lib/helper/transform";
-
 
 describe('测试 parser包', () => {
 

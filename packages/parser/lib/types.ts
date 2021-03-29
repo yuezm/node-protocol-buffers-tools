@@ -24,8 +24,13 @@ export class Module extends Node {
   body: Node[]; // 当前模块文件的所有子节点
   package: Identifier | PropertyAccessExpression;
 
-  filename: string;
   syntax: string;
+
+  filename: string; // 文件名
+  filepath: string; // 文件的路径
+  fileRelativePath: string; // 文件的相对路径
+
+  isMain: boolean = false; // 是否为主模块，还是依赖模块
 
 
   constructor(body: Node[] = []) {
@@ -57,10 +62,10 @@ export class ServiceDeclaration extends Node {
 
 export class FunctionDeclaration extends Node {
   name: Identifier; // 函数名称
-  parameters: Identifier; // 函数参数
-  returns: Identifier; // 函数返回值
+  parameters: Identifier | PropertyAccessExpression; // 函数参数
+  returns: Identifier | PropertyAccessExpression; // 函数返回值
 
-  constructor(name: Identifier, parameters: Identifier, returns: Identifier, parent: Node | null = null) {
+  constructor(name: Identifier, parameters: Identifier | PropertyAccessExpression, returns: Identifier | PropertyAccessExpression, parent: Node | null = null) {
     super(SyntaxKind.FunctionDeclaration, parent);
     this.name = name;
     this.parameters = parameters;

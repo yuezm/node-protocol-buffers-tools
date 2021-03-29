@@ -1,11 +1,16 @@
-import * as types from '../types';
-import * as define from '../define';
-import { GOOGLE_BASE_NUMBER_TYPES, Google_BASE_TYPES } from '../define';
+/**
+ * 将自定义的 AST --> typescript AST，生成AST定义
+ */
+
+import * as types from 'Parser/lib/types';
+import * as define from 'Parser/lib/define';
+import { GOOGLE_BASE_NUMBER_TYPES, Google_BASE_TYPES } from 'Parser/lib/define';
 
 import {
   createMethodSignature,
   createParameter,
   createPropertySignature,
+  createImportClause,
   factory,
   InterfaceDeclaration,
   MethodSignature,
@@ -15,9 +20,6 @@ import {
   SyntaxKind,
   PropertySignature,
   TypeNode,
-  ScriptTarget,
-  createSourceFile,
-  createPrinter,
   QualifiedName,
 } from 'typescript'
 
@@ -26,33 +28,51 @@ import {
  * @param node {types.Module}
  * @requires {ModuleDeclaration}
  */
-export function transform(node: types.Module): ModuleDeclaration {
-  return transformModuleDeclaration(node);
+export function transform(mods: types.Module[]): Statement[] {
+  const nodes: Statement[] = [];
+  for (const mod of mods) {
+    nodes.push(...transformModuleDeclaration(mod));
+  }
+
+  nodes.unshift(
+    factory.createImportDeclaration( // grpc
+      undefined,
+      undefined,
+      createImportClause(
+        undefined,
+        factory.createNamedImports([
+          factory.createImportSpecifier(undefined, factory.createIdentifier('Metadata'))
+        ])
+      ),
+      factory.createStringLiteral('grpc')
+    ),
+
+    factory.createImportDeclaration( // Observable
+      undefined,
+      undefined,
+      createImportClause(
+        undefined,
+        factory.createNamedImports([
+          factory.createImportSpecifier(undefined, factory.createIdentifier('Observable'))
+        ])
+      ),
+      factory.createStringLiteral('rxjs')
+    ),
+  );
+  
+  return nodes;
 }
 
-/**
- * 将typescript代码转换为字符串
- * @param node {ModuleDeclaration}
- * @returns {string}
- */
-export function generate(node: ModuleDeclaration): string {
-  const file = factory.updateSourceFile(
-    createSourceFile('ast.ts', '', ScriptTarget.Latest),
-    [
-      node
-    ]
-  );
-  const printer = createPrinter();
-  return printer.printFile(file);
-}
+
 
 
 /**
  * 转换 Module ==> Namespace
  * @param node {types.Module} 自定义的 Module AST
  */
-function transformModuleDeclaration(node: types.Module): ModuleDeclaration {
+function transformModuleDeclaration(node: types.Module): Statement[] {
   const body: Statement[] = [];
+
   for (const cn of node.body) {
     if (cn.kind === define.SyntaxKind.ServiceDeclaration || cn.kind === define.SyntaxKind.MessageDeclaration) {
       body.push(transformInterfaceDeclaration(cn as (types.ServiceDeclaration | types.MessageDeclaration)));
@@ -79,13 +99,18 @@ function transformModuleDeclaration(node: types.Module): ModuleDeclaration {
     pkg = (node.package as types.Identifier).escapedText;
   }
 
-  return factory.createModuleDeclaration(
-    undefined,
-    [ factory.createModifier(SyntaxKind.ExportKeyword) ],
-    factory.createIdentifier(pkg),
-    factory.createModuleBlock(finalBody),
-    NodeFlags.Namespace
-  );
+
+  // 其实需要加入 rxjs 和 grpc 
+
+  return [
+    factory.createModuleDeclaration(
+      undefined,
+      [ factory.createModifier(SyntaxKind.ExportKeyword) ],
+      factory.createIdentifier(pkg),
+      factory.createModuleBlock(finalBody),
+      NodeFlags.Namespace
+    )
+  ];
 }
 
 /**
@@ -146,7 +171,11 @@ function transformFunctionSignature(node: types.FunctionDeclaration): MethodSign
         undefined,
         factory.createIdentifier('request'),
         factory.createToken(SyntaxKind.QuestionToken),
-        factory.createTypeReferenceNode(factory.createIdentifier(node.parameters.escapedText), undefined),
+        factory.createTypeReferenceNode(
+          node.parameters.kind === define.SyntaxKind.Identifier
+            ? factory.createIdentifier((node.parameters as types.Identifier).escapedText)
+            : transformPropertyAccessExpression(node.parameters as types.PropertyAccessExpression),
+          undefined),
         undefined
       ),
       createParameter(
@@ -162,7 +191,10 @@ function transformFunctionSignature(node: types.FunctionDeclaration): MethodSign
     factory.createTypeReferenceNode(
       factory.createIdentifier('Observable'),
       [
-        factory.createTypeReferenceNode(factory.createIdentifier(node.returns.escapedText), undefined),
+        factory.createTypeReferenceNode(
+          node.returns.kind === define.SyntaxKind.Identifier
+            ? factory.createIdentifier((node.returns as types.Identifier).escapedText)
+            : transformPropertyAccessExpression(node.returns as types.PropertyAccessExpression), undefined),
       ]
     ),
     factory.createIdentifier(node.name.escapedText),
@@ -227,7 +259,7 @@ function transformPropertySignature(node: types.MessageElement): PropertySignatu
  * 类型转换，特殊处理 xx.yy.zz 
  * @param node
  */
-function transformPropertyAccessExpression(node: types.PropertyAccessExpression): QualifiedName {
+export function transformPropertyAccessExpression(node: types.PropertyAccessExpression): QualifiedName {
   return factory.createQualifiedName(
     node.expression.kind === define.SyntaxKind.Identifier ?
       factory.createIdentifier((node.expression as types.Identifier).escapedText) :

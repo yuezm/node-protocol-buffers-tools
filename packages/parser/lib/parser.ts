@@ -45,32 +45,32 @@ export default class Parser {
   }
 
   illegal(token: Token): Error {
-    return Error(`illegal ${ token.value } in ${ this.filename } on line ${ token.line }`);
+    return Error(`illegal ${token.value} in ${this.filename} on line ${token.line}`);
   }
 
   // 返回当前的Token，并移动游标
   next(): Token | null {
-    return this.offset === this.source.length ? null : this.source[this.offset++];
+    return this.offset === this.source.length ? null : this.source[ this.offset++ ];
   }
 
   prev(): Token | null {
-    return this.offset > 0 ? this.source[this.offset - 1] : null;
+    return this.offset > 0 ? this.source[ this.offset - 1 ] : null;
   }
 
   // 返回当前的Token
   now(): Token | null {
-    return this.offset === this.source.length ? null : this.source[this.offset];
+    return this.offset === this.source.length ? null : this.source[ this.offset ];
   }
 
   // 越过下一个匹配的Token
   skip(val: string): void {
-    if (this.source[this.offset].value === val) {
+    if (this.source[ this.offset ].value === val) {
       this.offset++;
     }
   }
 
   skipRe(val: RegExp) {
-    if (val.test(this.source[this.offset].value)) {
+    if (val.test(this.source[ this.offset ].value)) {
       this.offset++;
     }
   }
@@ -118,16 +118,39 @@ export default class Parser {
     this.skip('(');
 
     const params = this.next().value;
+    let paramsSyt: Identifier | PropertyAccessExpression;
+
+    if (params.includes('\.')) {
+      paramsSyt = this.parsePropertyAccess(params);
+    } else {
+      paramsSyt = createIdentifier(params);
+    }
+
 
     this.skip(')');
     this.skip('returns');
     this.skip('(');
 
     const returns = this.next().value;
+
+    let returnsSyt: Identifier | PropertyAccessExpression;
+    if (returns.includes('\.')) {
+      returnsSyt = this.parsePropertyAccess(returns);
+    } else {
+      returnsSyt = createIdentifier(returns);
+    }
+
     this.skip(')');
     this.skip(';');
 
-    return factory.createFunctionDeclaration(name, params, returns, parent);
+
+
+    return new FunctionDeclaration(
+      createIdentifier(name),
+      paramsSyt,
+      returnsSyt,
+      parent
+    )
   }
 
   parseMessage(): MessageDeclaration {
@@ -164,18 +187,18 @@ export default class Parser {
   parsePropertyAccess(s: string): PropertyAccessExpression {
     const sl = s.split('\.');
     let i = sl.length - 1;
-    const res = new PropertyAccessExpression(null, createIdentifier(sl[i]));
+    const res = new PropertyAccessExpression(null, createIdentifier(sl[ i ]));
     let next = res;
 
     i--;
     while (i >= 0) {
       if (i >= 1) {
         // 多个属性共建 xx.yy.zz.kk
-        next.expression = new PropertyAccessExpression(null, createIdentifier(sl[i]));
+        next.expression = new PropertyAccessExpression(null, createIdentifier(sl[ i ]));
         next = next.expression;
       } else {
         // 单个属性 xx.yy
-        next.expression = createIdentifier(sl[i]);
+        next.expression = createIdentifier(sl[ i ]);
       }
       i--;
     }

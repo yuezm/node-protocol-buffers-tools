@@ -8,7 +8,11 @@ import "google/protobuf/wrappers.proto";
 package test;
 
 service TestService{
-  rpc Search(Test) returns( google.protobuf.Empty);
+  rpc Search(Test) returns(google.protobuf.Empty);
+  rpc Search2(google.protobuf.Int32Value) returns(google.protobuf.Empty);
+  rpc Search3(google.protobuf.Int32Value) returns(test3.Test3);
+  rpc Search4(Test) returns(Test);
+  rpc Search5(test3.Test3) returns(test3.Test3);
 }
 
 message Test{

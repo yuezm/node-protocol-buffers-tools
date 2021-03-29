@@ -1,20 +1,10 @@
-import { TokenType } from 'tokenizer';
+import { TokenType } from 'tokenizer/lib/define';
 import { ParserOptions } from './lib/define';
 import Parser from './lib/parser';
 import { EnumDeclaration, MessageDeclaration, Module, PropertyAccessExpression, ServiceDeclaration } from './lib/types';
 
-export * from './lib/define';
-export * from './lib/types';
-export * from './lib/helper/helper';
-
-import * as factory from './lib/helper/factory';
-import * as transform from './lib/helper/transform';
 import { formatPath } from 'Common/lib/path';
-
-export {
-  factory,
-  transform,
-}
+import { createIdentifier } from './lib/helper/factory';
 
 export function parse(options: ParserOptions) {
   const parser = new Parser(options);
@@ -78,6 +68,7 @@ export function parse(options: ParserOptions) {
 
     // 对符号的整理
     else if (token.type === TokenType.SYMBOL) {
+      // 由于 protocol buffer 不会多个包裹，则此处无需使用栈来保证顺序
       if (token.value === '}') {
         serviceSyt = null;
         messageSyt = null;
@@ -105,9 +96,9 @@ export function parse(options: ParserOptions) {
   const pkg = parser.package || formatPath(options.filename);
   if (pkg.includes('\.')) {
     const typeList = pkg.split('\.');
-    root.package = new PropertyAccessExpression(factory.createIdentifier(typeList[ 0 ]), factory.createIdentifier(typeList[ 1 ]));
+    root.package = new PropertyAccessExpression(createIdentifier(typeList[ 0 ]), createIdentifier(typeList[ 1 ]));
   } else {
-    root.package = factory.createIdentifier(pkg);
+    root.package = createIdentifier(pkg);
   }
   return root;
 }

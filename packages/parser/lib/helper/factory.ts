@@ -12,13 +12,7 @@ export function createIdentifier(escapedText: string, parent: Node | null = null
   return new types.Identifier(escapedText, parent);
 }
 
-// 创建函数声明
-export function createFunctionDeclaration(name: string, parameters: string, returns: string, parent: ServiceDeclaration) {
-  return new types.FunctionDeclaration(createIdentifier(name), createIdentifier(parameters), createIdentifier(returns), parent)
-}
-
-
-// 转换代码，根据AST进行代码转换
+// 遍历AST，使用Visitor模式遍历，请参考babel
 export function traverse(node: Node | null, visitor: Visitor): Node {
   recursion(node);
   return node;

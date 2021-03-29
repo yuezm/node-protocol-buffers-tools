@@ -1,9 +1,8 @@
 import { TokenType } from './lib/define';
 import Tokenizer from './lib/tokenizer';
 
-export * from './lib/define';
 
-export class Token implements Token {
+export class Token {
   type: TokenType;
   value: string;
   line: number;

@@ -1,3 +1,5 @@
+const { pathsToModuleNameMapper } = require('ts-jest/utils');
+const { compilerOptions } = require('./tsconfig.json');
 module.exports = {
   "testEnvironment": "node",
   "preset": "ts-jest",
@@ -14,5 +16,7 @@ module.exports = {
   "collectCoverageFrom": [
     "**/*.(t|j)s"
   ],
-  "coverageDirectory": "../coverage"
+  "coverageDirectory": "../coverage",
+  // moduleNameMapper: {
+  // }
 };

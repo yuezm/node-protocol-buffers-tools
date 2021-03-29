@@ -32,12 +32,12 @@ export enum SyntaxKind {
 export enum NodeFlags {
   Unknown = 0,
   BlockScoped = 1,
-  Reference, // 表示是否是引用的
+  Reference, // 表示是否是引用的变量
 }
 
 export interface Visitor {
   visitor: Partial<{
-    [attr in SyntaxKind]: (node: Node) => void;
+    [ attr in SyntaxKind ]: (node: Node) => void;
   }>;
 }
 
