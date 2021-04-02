@@ -1,6 +1,6 @@
 import * as types from 'Parser/lib/types';
 import { Visitor } from 'Parser/lib/define';
-import { Identifier, Node, NumericLiteral, ServiceDeclaration } from 'Parser/lib/types';
+import { Identifier, Node, NumericLiteral } from 'Parser/lib/types';
 import { isNode } from 'Parser/lib/helper/helper';
 
 export function createNumericLiteral(text: string, parent: Node | null = null): NumericLiteral {

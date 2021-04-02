@@ -3,9 +3,9 @@
  */
 
 import * as types from "Parser/lib/types";
-import { ModuleDeclaration } from "typescript";
 import { transformService } from "./service";
+import { transformDto } from 'Transform/lib/nest/dto';
 
 export function transform(node: types.Module): any {
-  return transformService(node);
+  return transformDto(node);
 }

@@ -1,9 +1,9 @@
 syntax = "proto3";
 
-//package test2;
+package test;
 
 // 为了测试没有定义package的
 
-message test_name{
+message Test2_Type{
 
 }

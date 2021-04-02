@@ -1,19 +1,22 @@
-import { Google_BASE_TYPES, NodeFlags, ParserOptions, SyntaxKind } from './define';
+import { GOOGLE_BASE_NUMBER_TYPES, NodeFlags, ParserOptions, SyntaxKind } from './define';
 import { Token } from 'tokenizer';
 import * as factory from './helper/factory';
+import { createIdentifier } from './helper/factory';
 import {
   EnumDeclaration,
   EnumElement,
   Expression,
   FunctionDeclaration,
-  Identifier, ImportExpression,
+  ImportExpression,
+  KeyWordTypeNode,
   MessageDeclaration,
   MessageElement,
   NumericLiteral,
   PropertyAccessExpression,
-  ServiceDeclaration
+  ServiceDeclaration,
+  TypeNode,
+  TypeReferenceNode
 } from './types';
-import { createIdentifier } from './helper/factory';
 
 
 const BASE_10_RE = /^[1-9][0-9]*$/;
@@ -45,32 +48,32 @@ export default class Parser {
   }
 
   illegal(token: Token): Error {
-    return Error(`illegal ${token.value} in ${this.filename} on line ${token.line}`);
+    return Error(`illegal ${ token.value } in ${ this.filename } on line ${ token.line }`);
   }
 
   // 返回当前的Token，并移动游标
   next(): Token | null {
-    return this.offset === this.source.length ? null : this.source[ this.offset++ ];
+    return this.offset === this.source.length ? null : this.source[this.offset++];
   }
 
   prev(): Token | null {
-    return this.offset > 0 ? this.source[ this.offset - 1 ] : null;
+    return this.offset > 0 ? this.source[this.offset - 1] : null;
   }
 
   // 返回当前的Token
   now(): Token | null {
-    return this.offset === this.source.length ? null : this.source[ this.offset ];
+    return this.offset === this.source.length ? null : this.source[this.offset];
   }
 
   // 越过下一个匹配的Token
   skip(val: string): void {
-    if (this.source[ this.offset ].value === val) {
+    if (this.source[this.offset].value === val) {
       this.offset++;
     }
   }
 
   skipRe(val: RegExp) {
-    if (val.test(this.source[ this.offset ].value)) {
+    if (val.test(this.source[this.offset].value)) {
       this.offset++;
     }
   }
@@ -116,39 +119,21 @@ export default class Parser {
 
     const name = this.next().value;
     this.skip('(');
-
-    const params = this.next().value;
-    let paramsSyt: Identifier | PropertyAccessExpression;
-
-    if (params.includes('\.')) {
-      paramsSyt = this.parsePropertyAccess(params);
-    } else {
-      paramsSyt = createIdentifier(params);
-    }
-
+    const params = this.next();
 
     this.skip(')');
     this.skip('returns');
     this.skip('(');
 
-    const returns = this.next().value;
-
-    let returnsSyt: Identifier | PropertyAccessExpression;
-    if (returns.includes('\.')) {
-      returnsSyt = this.parsePropertyAccess(returns);
-    } else {
-      returnsSyt = createIdentifier(returns);
-    }
+    const returns = this.next();
 
     this.skip(')');
     this.skip(';');
 
-
-
     return new FunctionDeclaration(
       createIdentifier(name),
-      paramsSyt,
-      returnsSyt,
+      this.parseTypeNode(params.value),
+      this.parseTypeNode(returns.value),
       parent
     )
   }
@@ -169,40 +154,51 @@ export default class Parser {
     this.skipRe(/\d+/);
     this.skip(';');
 
-
     // 确定类型是否为 xx.yy 这样的获取，目前只做两层处理哈，后续在写递归
-    let typeSyt: Identifier | PropertyAccessExpression;
-    if (type.value.includes('\.')) {
-      typeSyt = this.parsePropertyAccess(type.value);
-    } else {
-      typeSyt = factory.createIdentifier(type.value);
-      if (!Google_BASE_TYPES.has(type.value)) {
-        typeSyt.flags = NodeFlags.Reference;
-      }
-    }
-
-    return new MessageElement(factory.createIdentifier(name.value), typeSyt, parent);
+    return new MessageElement(factory.createIdentifier(name.value), this.parseTypeNode(type.value), parent);
   }
 
   parsePropertyAccess(s: string): PropertyAccessExpression {
     const sl = s.split('\.');
     let i = sl.length - 1;
-    const res = new PropertyAccessExpression(null, createIdentifier(sl[ i ]));
+    const res = new PropertyAccessExpression(null, createIdentifier(sl[i]));
+    res.namespace = sl[0];
     let next = res;
 
     i--;
     while (i >= 0) {
       if (i >= 1) {
         // 多个属性共建 xx.yy.zz.kk
-        next.expression = new PropertyAccessExpression(null, createIdentifier(sl[ i ]));
+        next.expression = new PropertyAccessExpression(null, createIdentifier(sl[i]));
         next = next.expression;
       } else {
         // 单个属性 xx.yy
-        next.expression = createIdentifier(sl[ i ]);
+        next.expression = createIdentifier(sl[i]);
       }
       i--;
     }
     return res;
+  }
+
+  parseTypeNode(s: string): TypeNode {
+    let typeSyt: TypeNode;
+    if (s.includes('\.')) {
+      typeSyt = new TypeReferenceNode(this.parsePropertyAccess(s));
+    } else {
+      if (s === 'string') {
+        typeSyt = new KeyWordTypeNode(SyntaxKind.StringKeyWord);
+      } else if (s === 'bool') {
+        typeSyt = new KeyWordTypeNode(SyntaxKind.BooleanKeyWord);
+      } else if (GOOGLE_BASE_NUMBER_TYPES.has(s)) {
+        typeSyt = new KeyWordTypeNode(SyntaxKind.NumberKeyWord);
+        typeSyt.flags = NodeFlags.GoogleNumber; // 专属标记Google数字类型
+      } else {
+        // 对于pb来说，如果非普通变量，且未指定命名空间，则是自身
+        // typeSyt = new TypeReferenceNode(factory.createIdentifier(s));
+        typeSyt = new TypeReferenceNode(this.parsePropertyAccess(`${ this.package }.${ s }`));
+      }
+    }
+    return typeSyt;
   }
 
   parseEnum(): EnumDeclaration {
@@ -217,7 +213,7 @@ export default class Parser {
     this.skip('=');
     const init = this.next();
     this.skip(';');
-    return new EnumElement(factory.createIdentifier(name.value), this.parseNumber(init), parent);
+    return new EnumElement(factory.createIdentifier(name.value), new KeyWordTypeNode(SyntaxKind.NumberKeyWord), this.parseNumber(init), parent);
   }
 
   serializeNumber(token: Token): number | string {

@@ -22,7 +22,7 @@ export class Cli {
     this.parseByPath(this.options.entry, true);
   }
 
-  parseByPath(filename: string, isMain: boolean = false): void {
+  parseByPath(filename: string, isMain = false): void {
     const finalPath = this.serializeFilePath(filename);
 
     const syt = parse({ source: tokenize(readFileSync(finalPath).toString()), filename });

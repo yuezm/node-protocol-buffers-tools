@@ -1,10 +1,25 @@
-
-import { createReturn, createParameter, createMethod, createBinary, createPropertyAccess, createProperty, createCall, createImportClause, factory, SyntaxKind, createObjectLiteral, Node, MethodDeclaration, PropertyDeclaration, ExpressionStatement, ImportDeclaration, QualifiedName, } from "typescript";
+import {
+  createReturn,
+  createParameter,
+  createMethod,
+  createBinary,
+  createPropertyAccess,
+  createProperty,
+  createCall,
+  createImportClause,
+  factory,
+  SyntaxKind,
+  createObjectLiteral,
+  Node,
+  MethodDeclaration,
+  PropertyDeclaration,
+  ExpressionStatement,
+  ImportDeclaration,
+} from "typescript";
 import * as types from "Parser/lib/types";
 import * as define from 'Parser/lib/define';
 import { TransformServiceOptions } from "../define";
-import { transformPropertyAccessExpression } from "../statement";
-import { getPropertyAccessOriginStr } from "Parser/lib/helper/helper";
+import { getTypeNodesImports, transformTypeNode } from "../helper";
 
 
 export function transformService(mod: types.Module): Node[] {
@@ -14,21 +29,20 @@ export function transformService(mod: types.Module): Node[] {
   const initNodes: ExpressionStatement[] = [];
   const membersNodes: MethodDeclaration[] = [];
 
-  const importItems: string[] = [] // 其余无规则import的集合，例如 import { xx,yy } from "zz"; ==>  [ xx, yy ]
-
+  const importItems: string[] = []; // 其余无规则import的集合，例如 import { xx,yy } from "zz"; ==>  [ xx, yy ]
   importNodes.push(...createHeaderImports());
-
   const pkg = (mod.package as types.Identifier).escapedText;
+
   for (const node of mod.body) {
     if (node.kind === define.SyntaxKind.ServiceDeclaration) {
-      const basename = (node as types.ServiceDeclaration).name.escapedText
+      const basename = (node as types.ServiceDeclaration).name.escapedText;
       const { define, dec, init, members, imports } = createRpcService(node as types.ServiceDeclaration, {
         package: pkg,
         filename: mod.filename,
         filepath: mod.filepath,
         fileRelativePath: mod.fileRelativePath,
         serviceName: basename,
-        serviceRpcName: `${basename}RpcService`,
+        serviceRpcName: `${ basename }RpcService`,
       });
 
       defNodes.push(define);
@@ -48,14 +62,14 @@ export function transformService(mod: types.Module): Node[] {
         [ ...new Set(importItems) ].map(v => factory.createImportSpecifier(undefined, factory.createIdentifier(v)))
       )
     ),
-    factory.createStringLiteral(`@Protocol/${mod.filename}`)
+    factory.createStringLiteral(`@Protocol/${ mod.filename }`)
   ));
 
   return [ ...importNodes, createMainClass(defNodes, decNodes, initNodes, membersNodes) ];
 }
 
 /**
- * 
+ *
  * @returns 通用首部引入
  */
 export function createHeaderImports(): ImportDeclaration[] {
@@ -69,7 +83,8 @@ export function createHeaderImports(): ImportDeclaration[] {
           factory.createImportSpecifier(undefined, factory.createIdentifier('Injectable'))
         ])
       ),
-      factory.createStringLiteral('@nestjs/common')),
+      factory.createStringLiteral('@nestjs/common')
+    ),
 
     factory.createImportDeclaration( // @nestjs/microservices
       undefined,
@@ -82,21 +97,6 @@ export function createHeaderImports(): ImportDeclaration[] {
         ])
       ),
       factory.createStringLiteral('@nestjs/microservices')
-    ),
-
-    factory.createImportDeclaration( // @Src/helper
-      undefined,
-      undefined,
-      createImportClause(
-        undefined,
-        factory.createNamedImports([
-          factory.createImportSpecifier(
-            undefined,
-            factory.createIdentifier('composeGRPCClientOption')
-          )
-        ])
-      ),
-      factory.createStringLiteral('@Src/helper')
     ),
 
     factory.createImportDeclaration( // grpc
@@ -122,15 +122,33 @@ export function createHeaderImports(): ImportDeclaration[] {
       ),
       factory.createStringLiteral('rxjs')
     ),
+
+    factory.createImportDeclaration( // @Src/helper
+      undefined,
+      undefined,
+      createImportClause(
+        undefined,
+        factory.createNamedImports([
+          factory.createImportSpecifier(
+            undefined,
+            factory.createIdentifier('composeGRPCClientOption')
+          )
+        ])
+      ),
+      factory.createStringLiteral('@Src/helper')
+    ),
   ]
 }
 
-
-export function createMainClass(
-  def: PropertyDeclaration[],
-  dec: PropertyDeclaration[],
-  init: ExpressionStatement[],
-  members: MethodDeclaration[]): any {
+/**
+ * service主类引入
+ * @param def 变量定义
+ * @param dec 装饰器定义
+ * @param init onModuleInit 内初始化定义
+ * @param members class 可调用方法定义
+ * @returns
+ */
+export function createMainClass(def: PropertyDeclaration[], dec: PropertyDeclaration[], init: ExpressionStatement[], members: MethodDeclaration[]): any {
   return factory.createClassDeclaration(
     [
       factory.createDecorator(
@@ -145,10 +163,8 @@ export function createMainClass(
       // xxRpcService
       ...def,
 
-
       // @Client
       ...dec,
-
 
       // onModuleInit
       createMethod(
@@ -174,7 +190,7 @@ export function createMainClass(
 
 // 生成一个RPC Service，包含声明、装饰器、初始化
 export function createRpcService(svc: types.ServiceDeclaration, options: TransformServiceOptions) {
-  const clientName = `${options.serviceName}Client`;
+  const clientName = `${ options.serviceName }Client`;
   const imports = [ options.package ];  // 需要引入该 package
 
   // 声明
@@ -261,39 +277,13 @@ export function createRpcService(svc: types.ServiceDeclaration, options: Transfo
   };
 }
 
+// 生成一个RPC函数
 export function createRpcMethod(med: types.FunctionDeclaration, options: TransformServiceOptions, imports: string[]): MethodDeclaration {
-  let parametersSyt: QualifiedName;
-  let returnsSyt: QualifiedName;
+  const paramsImport = getTypeNodesImports(med.parameters);
+  if (paramsImport.imp) imports.push(paramsImport.text);
 
-  // 参数序列化
-  if (med.parameters.kind === define.SyntaxKind.Identifier) {
-    parametersSyt = factory.createQualifiedName(
-      factory.createIdentifier(options.package),
-      factory.createIdentifier((med.parameters as types.Identifier).escapedText)
-    );
-  } else {
-    parametersSyt = transformPropertyAccessExpression(med.parameters as types.PropertyAccessExpression);
-    // 看是否需要额外的导入
-    const originStr = getPropertyAccessOriginStr(med.parameters as types.PropertyAccessExpression);
-    imports.push(originStr[ 0 ]); // 需要将首个字符加载进来
-
-    console.log(originStr);
-
-  }
-
-  // 返回值序列化
-  if (med.returns.kind === define.SyntaxKind.Identifier) {
-    returnsSyt = factory.createQualifiedName(
-      factory.createIdentifier(options.package),
-      factory.createIdentifier((med.returns as types.Identifier).escapedText)
-    );
-  } else {
-    returnsSyt = transformPropertyAccessExpression(med.returns as types.PropertyAccessExpression);
-    // 看是否需要额外的导入
-    const originStr = getPropertyAccessOriginStr(med.returns as types.PropertyAccessExpression);
-    imports.push(originStr[ 0 ]); // 需要将首个字符加载进来
-  }
-
+  const returnsImport = getTypeNodesImports(med.returns);
+  if (returnsImport.imp) imports.push(returnsImport.text);
 
   return createMethod(
     undefined,
@@ -310,7 +300,7 @@ export function createRpcMethod(med: types.FunctionDeclaration, options: Transfo
         undefined,
         factory.createIdentifier('request'),
         undefined,
-        factory.createTypeReferenceNode(parametersSyt, undefined),
+        transformTypeNode(med.parameters),
         undefined
       ),
 
@@ -330,13 +320,13 @@ export function createRpcMethod(med: types.FunctionDeclaration, options: Transfo
     factory.createTypeReferenceNode(
       factory.createIdentifier('Observable'),
       [
-        factory.createTypeReferenceNode(returnsSyt, undefined)
-      ]),
+        transformTypeNode(med.returns)
+      ]
+    ),
 
 
     // 函数代码实体
-    factory.createBlock(
-      [
+    factory.createBlock([
         createReturn(
           createCall(
             createPropertyAccess(

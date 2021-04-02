@@ -4,7 +4,6 @@
 
 import * as types from 'Parser/lib/types';
 import * as define from 'Parser/lib/define';
-import { GOOGLE_BASE_NUMBER_TYPES, Google_BASE_TYPES } from 'Parser/lib/define';
 
 import {
   createMethodSignature,
@@ -14,18 +13,18 @@ import {
   factory,
   InterfaceDeclaration,
   MethodSignature,
-  ModuleDeclaration,
   NodeFlags,
   Statement,
   SyntaxKind,
   PropertySignature,
   TypeNode,
-  QualifiedName,
+  ImportDeclaration,
 } from 'typescript'
+import { transformTypeNode } from 'Transform/lib/helper';
 
 /**
  * 将 factory定义的自身的AST转换为TS自身的AST
- * @param node {types.Module}
+ * @param mods {types.Module}
  * @requires {ModuleDeclaration}
  */
 export function transform(mods: types.Module[]): Statement[] {
@@ -33,8 +32,17 @@ export function transform(mods: types.Module[]): Statement[] {
   for (const mod of mods) {
     nodes.push(...transformModuleDeclaration(mod));
   }
+  nodes.unshift(...createHeaderImports());
+  return nodes;
+}
 
-  nodes.unshift(
+
+/**
+ *
+ * @returns 通用首部引入
+ */
+export function createHeaderImports(): ImportDeclaration[] {
+  return [
     factory.createImportDeclaration( // grpc
       undefined,
       undefined,
@@ -58,13 +66,20 @@ export function transform(mods: types.Module[]): Statement[] {
       ),
       factory.createStringLiteral('rxjs')
     ),
-  );
-  
-  return nodes;
+
+    factory.createImportDeclaration( // long
+      undefined,
+      undefined,
+      createImportClause(
+        undefined,
+        factory.createNamedImports([
+          factory.createImportSpecifier(undefined, factory.createIdentifier('Long'))
+        ])
+      ),
+      factory.createStringLiteral('long')
+    ),
+  ]
 }
-
-
-
 
 /**
  * 转换 Module ==> Namespace
@@ -83,7 +98,7 @@ function transformModuleDeclaration(node: types.Module): Statement[] {
 
   let finalBody = body;
   let pkg = '';
-  // 双重namespace
+  // 双重namespace，例如 google.protobuf
   if (node.package.kind === define.SyntaxKind.PropertyAccessExpression) {
     finalBody = [
       factory.createModuleDeclaration(
@@ -100,8 +115,7 @@ function transformModuleDeclaration(node: types.Module): Statement[] {
   }
 
 
-  // 其实需要加入 rxjs 和 grpc 
-
+  // 其实需要加入 rxjs 和 grpc
   return [
     factory.createModuleDeclaration(
       undefined,
@@ -171,13 +185,10 @@ function transformFunctionSignature(node: types.FunctionDeclaration): MethodSign
         undefined,
         factory.createIdentifier('request'),
         factory.createToken(SyntaxKind.QuestionToken),
-        factory.createTypeReferenceNode(
-          node.parameters.kind === define.SyntaxKind.Identifier
-            ? factory.createIdentifier((node.parameters as types.Identifier).escapedText)
-            : transformPropertyAccessExpression(node.parameters as types.PropertyAccessExpression),
-          undefined),
+        transformTypeNode(node.parameters),
         undefined
       ),
+
       createParameter(
         undefined,
         undefined,
@@ -191,10 +202,7 @@ function transformFunctionSignature(node: types.FunctionDeclaration): MethodSign
     factory.createTypeReferenceNode(
       factory.createIdentifier('Observable'),
       [
-        factory.createTypeReferenceNode(
-          node.returns.kind === define.SyntaxKind.Identifier
-            ? factory.createIdentifier((node.returns as types.Identifier).escapedText)
-            : transformPropertyAccessExpression(node.returns as types.PropertyAccessExpression), undefined),
+        transformTypeNode(node.returns),
       ]
     ),
     factory.createIdentifier(node.name.escapedText),
@@ -207,64 +215,22 @@ function transformFunctionSignature(node: types.FunctionDeclaration): MethodSign
  * 创建interface中的属性定义
  */
 function transformPropertySignature(node: types.MessageElement): PropertySignature {
-  let type: TypeNode[] = [];
-  const nodeType = node.type;
+  const types: TypeNode[] = [
+    transformTypeNode(node.type),
+    // @ts-ignore
+    factory.createNull()
+  ];
 
-  // 检查是否是独立的类型(xx)，还是嵌套的(xx.yy.zz)
-  if (nodeType.kind === define.SyntaxKind.Identifier) {
-    // 看下类型是基础类型还是引用类型
-    const typeText = (nodeType as types.Identifier).escapedText;
-
-    if (!Google_BASE_TYPES.has(typeText)) {
-      // 引用类型
-      type = [ factory.createTypeReferenceNode(factory.createIdentifier(typeText), undefined) ];
-    } else {
-      // Google基础类型
-      if (GOOGLE_BASE_NUMBER_TYPES.has(typeText)) {
-        // Google 特殊的数字类型（涉及到 Long）
-        type = [
-          factory.createKeywordTypeNode(SyntaxKind.NumberKeyword),
-          factory.createTypeReferenceNode(factory.createIdentifier('Long'), undefined)
-        ];
-      } else if (typeText === 'string') {
-        type = [ factory.createKeywordTypeNode(SyntaxKind.StringKeyword) ];
-      } else if (typeText === 'bool') {
-        type = [ factory.createKeywordTypeNode(SyntaxKind.BooleanKeyword) ];
-      }
-    }
-  } else {
-    // 进入了 xx.yy.zz
-    type = [
-      factory.createTypeReferenceNode(
-        transformPropertyAccessExpression(node.type as types.PropertyAccessExpression),
-        undefined
-      ),
-    ];
+  // protocol buffer的数字类型，在js中以long形式呈现
+  if (node.type.flags === define.NodeFlags.GoogleNumber) {
+    types.unshift(factory.createTypeReferenceNode(factory.createIdentifier('Long')));
   }
 
   return createPropertySignature(
     undefined,
     factory.createIdentifier(node.name.escapedText),
     factory.createToken(SyntaxKind.QuestionToken),
-    factory.createUnionTypeNode([
-      ...type as any[],
-      // @ts-ignore
-      factory.createNull()
-    ]),
+    factory.createUnionTypeNode(types),
     undefined
-  )
-}
-
-/**
- * 类型转换，特殊处理 xx.yy.zz 
- * @param node
- */
-export function transformPropertyAccessExpression(node: types.PropertyAccessExpression): QualifiedName {
-  return factory.createQualifiedName(
-    node.expression.kind === define.SyntaxKind.Identifier ?
-      factory.createIdentifier((node.expression as types.Identifier).escapedText) :
-      transformPropertyAccessExpression(node.expression as types.PropertyAccessExpression),
-    factory.createIdentifier(node.name.escapedText)
   );
 }
-
