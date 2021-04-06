@@ -24,6 +24,8 @@ export class Node {
 export class Module extends Node {
   body: Node[]; // 当前模块文件的所有子节点
   package: Identifier | PropertyAccessExpression;
+  messages: string[];
+  enums: string[];
 
   syntax: string;
 

@@ -17,5 +17,5 @@ export function bootstrap(options: CliOptions): string {
       nestStr += generate(nestTransform(mod)) + '\n';
     }
   }
-  return nestStr;
+  return stateStr + '\n' + nestStr;
 }

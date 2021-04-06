@@ -1,12 +1,12 @@
 import { TokenType } from 'tokenizer/lib/define';
 import { ParserOptions } from './lib/define';
 import Parser from './lib/parser';
-import { EnumDeclaration, MessageDeclaration, Module, PropertyAccessExpression, ServiceDeclaration } from './lib/types';
+import { EnumDeclaration, MessageDeclaration, Module, ServiceDeclaration } from './lib/types';
 
 import { formatPath } from 'Common/lib/path';
-import { createIdentifier } from './lib/helper/factory';
+import { createIdentifier, createPropertyAccessExpression } from './lib/helper/factory';
 
-export function parse(options: ParserOptions) {
+export function parse(options: ParserOptions): Module {
   const parser = new Parser(options);
 
   const root = new Module(); // 模块根节点，认为每一个文件为一个模块
@@ -92,11 +92,12 @@ export function parse(options: ParserOptions) {
 
   root.filename = options.filename;
   root.syntax = parser.syntax;
+  root.enums = parser.enums;
+  root.messages = parser.messages;
 
   const pkg = parser.package || formatPath(options.filename);
   if (pkg.includes('\.')) {
-    const typeList = pkg.split('\.');
-    root.package = new PropertyAccessExpression(createIdentifier(typeList[ 0 ]), createIdentifier(typeList[ 1 ]));
+    root.package = createPropertyAccessExpression(pkg);
   } else {
     root.package = createIdentifier(pkg);
   }

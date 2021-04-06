@@ -1,8 +1,4 @@
 import {
-  createReturn,
-  createParameter,
-  createMethod,
-  createBinary,
   createPropertyAccess,
   createProperty,
   createCall,
@@ -10,10 +6,7 @@ import {
   factory,
   SyntaxKind,
   createObjectLiteral,
-  Node,
-  MethodDeclaration,
   PropertyDeclaration,
-  ExpressionStatement,
   ImportDeclaration,
   Statement,
   ClassDeclaration,
@@ -23,12 +16,24 @@ import {
 import * as types from 'Parser/lib/types';
 import * as define from 'Parser/lib/define';
 import { getTypeNodesImports, transformTypeNode } from 'Transform/lib/helper';
-import { TransformOptions } from 'Transform/lib/define';
+import { TransformDtoOptions } from 'Transform/lib/define';
 
+
+/**
+ * 转换 DTO，关于DTO的话，只转换 message 定义
+ * @param mod 
+ * @returns 
+ */
 export function transformDto(mod: types.Module): Statement[] {
   const classes: Statement[] = [];
   const importNodes = createHeaderImports();
   const importItems: string[] = [];
+
+  const options: TransformDtoOptions = {
+    package: (mod.package as types.Identifier).escapedText,
+    enumSet: new Set<string>(mod.enums),
+    messageSet: new Set<string>(mod.messages),
+  };
 
   for (const cn of mod.body) {
     if (cn.kind === define.SyntaxKind.MessageDeclaration) {
@@ -36,7 +41,7 @@ export function transformDto(mod: types.Module): Statement[] {
         transformMessage(
           cn as types.MessageDeclaration,
           importItems,
-          { package: (mod.package as types.Identifier).escapedText }
+          options,
         )
       );
     }
@@ -51,7 +56,7 @@ export function transformDto(mod: types.Module): Statement[] {
         [ ...new Set(importItems) ].map(v => factory.createImportSpecifier(undefined, factory.createIdentifier(v)))
       )
     ),
-    factory.createStringLiteral(`@Protocol/${ mod.filename }`)
+    factory.createStringLiteral(`@Protocol/${mod.filename}`)
   ));
 
   return [
@@ -110,18 +115,18 @@ export function createHeaderImports(): ImportDeclaration[] {
   ]
 }
 
-export function transformMessage(msg: types.MessageDeclaration, imports: string[], options: TransformOptions): ClassDeclaration {
+export function transformMessage(msg: types.MessageDeclaration, imports: string[], options: TransformDtoOptions): ClassDeclaration {
   const body: ClassElement[] = [];
 
   for (const item of msg.members) {
-    body.push(transformMessageItem(item, imports));
+    body.push(transformMessageItem(item, imports, options));
   }
 
 
   return factory.createClassDeclaration(
     undefined,
     [ factory.createModifier(SyntaxKind.ExportKeyword) ],
-    factory.createIdentifier(`${ msg.name.escapedText }Dto`),
+    factory.createIdentifier(`${msg.name.escapedText}Dto`),
     undefined,
     [
       factory.createHeritageClause(
@@ -142,7 +147,7 @@ export function transformMessage(msg: types.MessageDeclaration, imports: string[
   )
 }
 
-export function transformMessageItem(itm: types.MessageElement, imports: string[]): ClassElement {
+export function transformMessageItem(itm: types.MessageElement, imports: string[], options: TransformDtoOptions): ClassElement {
   if (itm.type.kind === define.SyntaxKind.StringKeyWord) {
     return createPropertyString(itm);
   } else if (itm.type.kind === define.SyntaxKind.NumberKeyWord) {
@@ -150,7 +155,7 @@ export function transformMessageItem(itm: types.MessageElement, imports: string[
   } else if (itm.type.kind === define.SyntaxKind.BooleanKeyWord) {
     return createPropertyBoolean(itm);
   } else {
-    return createRefProperty(itm, imports);
+    return createRefProperty(itm, imports, options);
   }
 }
 
@@ -188,15 +193,15 @@ export function createPropertyNumber(itm: types.MessageElement): PropertyDeclara
       ),
       factory.createDecorator(createCall(factory.createIdentifier('Expose'), undefined, [])),
       factory.createDecorator(createCall(factory.createIdentifier('Type'), undefined, [
-          factory.createArrowFunction(
-            undefined,
-            undefined,
-            [],
-            undefined,
-            factory.createToken(SyntaxKind.EqualsGreaterThanToken),
-            factory.createIdentifier('Number')
-          )
-        ])
+        factory.createArrowFunction(
+          undefined,
+          undefined,
+          [],
+          undefined,
+          factory.createToken(SyntaxKind.EqualsGreaterThanToken),
+          factory.createIdentifier('Number')
+        )
+      ])
       )
     ],
     undefined,
@@ -228,7 +233,14 @@ export function createPropertyBoolean(itm: types.MessageElement): PropertyDeclar
   );
 }
 
-export function createRefProperty(itm: types.MessageElement, imports: string[]): PropertyDeclaration {
+/**
+ * 转换 message 内部的引用数据类型
+ * @param itm
+ * @param imports 
+ * @param options 
+ * @returns 
+ */
+export function createRefProperty(itm: types.MessageElement, imports: string[], options: TransformDtoOptions): PropertyDeclaration {
   const type = itm.type as types.TypeReferenceNode;
   const typeNode = transformTypeNode(type);
 
@@ -248,19 +260,22 @@ export function createRefProperty(itm: types.MessageElement, imports: string[]):
     factory.createDecorator(createCall(factory.createIdentifier('Expose'), undefined, [])),
   ];
 
-  if (type.expression.kind === define.SyntaxKind.Identifier) {
+  if (type.expression.kind === define.SyntaxKind.PropertyAccessExpression && (type.expression as types.PropertyAccessExpression).namespace === options.package) {
     // 加一个Type转换
+    const text = (type.expression as types.PropertyAccessExpression).name.escapedText;
+    const transformType = options.enumSet.has(text) ? 'Number' : `${text}Dto`;
+
     decorators.push(
       factory.createDecorator(createCall(factory.createIdentifier('Type'), undefined, [
-          factory.createArrowFunction(
-            undefined,
-            undefined,
-            [],
-            undefined,
-            factory.createToken(SyntaxKind.EqualsGreaterThanToken),
-            factory.createIdentifier(`${ (type.expression as types.Identifier).escapedText }Dto`)
-          )
-        ])
+        factory.createArrowFunction(
+          undefined,
+          undefined,
+          [],
+          undefined,
+          factory.createToken(SyntaxKind.EqualsGreaterThanToken),
+          factory.createIdentifier(transformType)
+        )
+      ])
       )
     )
   }

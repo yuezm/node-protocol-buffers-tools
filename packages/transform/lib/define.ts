@@ -10,3 +10,8 @@ export interface TransformServiceOptions extends TransformOptions {
   serviceName?: string; // 次属性主要用于 function 使用，表示该 function 调用哪个 service 的方法
   serviceRpcName?: string;
 }
+
+export interface TransformDtoOptions extends TransformOptions {
+  enumSet: Set<string>;
+  messageSet: Set<string>;
+}

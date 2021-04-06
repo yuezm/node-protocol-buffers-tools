@@ -1,7 +1,7 @@
 import { GOOGLE_BASE_NUMBER_TYPES, NodeFlags, ParserOptions, SyntaxKind } from './define';
 import { Token } from 'tokenizer';
 import * as factory from './helper/factory';
-import { createIdentifier } from './helper/factory';
+import { createIdentifier, createPropertyAccessExpression } from './helper/factory';
 import {
   EnumDeclaration,
   EnumElement,
@@ -40,11 +40,17 @@ export default class Parser {
 
   offset: number;
 
+  enums: string[];
+  messages: string[];
+
   constructor(options: ParserOptions) {
     this.source = options.source;
     this.filename = options.filename;
 
     this.offset = 0;
+
+    this.enums = [];
+    this.messages = [];
   }
 
   illegal(token: Token): Error {
@@ -141,6 +147,7 @@ export default class Parser {
   parseMessage(): MessageDeclaration {
     const token = this.next();
     this.skip('{');
+    this.messages.push(token.value);
     return new MessageDeclaration(factory.createIdentifier(token.value), []);
   }
 
@@ -158,32 +165,10 @@ export default class Parser {
     return new MessageElement(factory.createIdentifier(name.value), this.parseTypeNode(type.value), parent);
   }
 
-  parsePropertyAccess(s: string): PropertyAccessExpression {
-    const sl = s.split('\.');
-    let i = sl.length - 1;
-    const res = new PropertyAccessExpression(null, createIdentifier(sl[i]));
-    res.namespace = sl[0];
-    let next = res;
-
-    i--;
-    while (i >= 0) {
-      if (i >= 1) {
-        // 多个属性共建 xx.yy.zz.kk
-        next.expression = new PropertyAccessExpression(null, createIdentifier(sl[i]));
-        next = next.expression;
-      } else {
-        // 单个属性 xx.yy
-        next.expression = createIdentifier(sl[i]);
-      }
-      i--;
-    }
-    return res;
-  }
-
   parseTypeNode(s: string): TypeNode {
     let typeSyt: TypeNode;
     if (s.includes('\.')) {
-      typeSyt = new TypeReferenceNode(this.parsePropertyAccess(s));
+      typeSyt = new TypeReferenceNode(createPropertyAccessExpression(s));
     } else {
       if (s === 'string') {
         typeSyt = new KeyWordTypeNode(SyntaxKind.StringKeyWord);
@@ -195,7 +180,7 @@ export default class Parser {
       } else {
         // 对于pb来说，如果非普通变量，且未指定命名空间，则是自身
         // typeSyt = new TypeReferenceNode(factory.createIdentifier(s));
-        typeSyt = new TypeReferenceNode(this.parsePropertyAccess(`${ this.package }.${ s }`));
+        typeSyt = new TypeReferenceNode(createPropertyAccessExpression(`${ this.package }.${ s }`));
       }
     }
     return typeSyt;
@@ -204,6 +189,7 @@ export default class Parser {
   parseEnum(): EnumDeclaration {
     const token = this.next();
     this.skip('{');
+    this.enums.push(token.value);
     return new EnumDeclaration(factory.createIdentifier(token.value), [])
   }
 

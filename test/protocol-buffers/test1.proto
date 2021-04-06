@@ -21,6 +21,8 @@ message Test{
   google.protobuf.Int32Value cls = 3;
   string name2 = 4;
   Test name3 = 5;
+  Test_Name name4 = 6;
+  Test_Enum name5 = 7;
 }
 
 message Test_Name{
