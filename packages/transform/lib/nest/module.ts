@@ -1,20 +1,16 @@
 import {
-  createPropertyAccess,
-  createProperty,
   createCall,
   createImportClause,
   factory,
   SyntaxKind,
   createObjectLiteral,
-  PropertyDeclaration,
   ImportDeclaration,
   Statement,
-  ClassDeclaration,
-  ClassElement,
   createArrayLiteral,
 } from "typescript";
+import * as types from 'Parser/lib/types';
 
-export default function transformModule(): Statement {
+export default function transformModule(node: types.Module): Statement {
   return factory.createClassDeclaration(
     [
       factory.createDecorator(

@@ -10,7 +10,7 @@ import {
   factory,
   SyntaxKind,
   createObjectLiteral,
-  Node,
+  Statement,
   MethodDeclaration,
   PropertyDeclaration,
   ExpressionStatement,
@@ -22,7 +22,7 @@ import { TransformServiceOptions } from "../define";
 import { getTypeNodesImports, transformTypeNode } from "../helper";
 
 
-export function transformService(mod: types.Module): Node[] {
+export function transformService(mod: types.Module): Statement[] {
   const importNodes: ImportDeclaration[] = [];
   const defNodes: PropertyDeclaration[] = [];
   const decNodes: PropertyDeclaration[] = [];

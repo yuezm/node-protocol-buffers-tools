@@ -15,3 +15,10 @@ export interface TransformDtoOptions extends TransformOptions {
   enumSet: Set<string>;
   messageSet: Set<string>;
 }
+
+export interface TransNestResult {
+  controller: string;
+  service: string;
+  dto: string;
+  module: string;
+}

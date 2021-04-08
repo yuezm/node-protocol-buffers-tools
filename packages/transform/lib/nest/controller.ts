@@ -19,9 +19,10 @@ import {
   ClassDeclaration,
   createConstructor,
 } from "typescript";
+import * as types from 'Parser/lib/types';
 
 
-export function transformController(): Statement[] {
+export function transformController(node: types.Module): Statement[] {
   const imports = createHeaderImports();
   const cls = createClassDeclaration();
 
