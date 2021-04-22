@@ -1,12 +1,12 @@
 import { Token } from 'tokenizer';
-import { Node } from './types';
+import { CNode } from './types';
 
 export interface ParserOptions {
   source: Token[];
   filename: string;
 }
 
-export enum SyntaxKind {
+export enum CSyntaxKind {
   Unknown = 0,
 
   Module, // 文件模块
@@ -36,18 +36,18 @@ export enum SyntaxKind {
   TypeReference
 }
 
-export type KeyWordType = SyntaxKind.StringKeyWord | SyntaxKind.NumberKeyWord | SyntaxKind.BooleanKeyWord;
+export type CKeyWordType = CSyntaxKind.StringKeyWord | CSyntaxKind.NumberKeyWord | CSyntaxKind.BooleanKeyWord;
 
-export enum NodeFlags {
+export enum CNodeFlags {
   Unknown = 0,
   BlockScoped = 1,
   Reference, // 表示是否是引用的变量
   GoogleNumber,
 }
 
-export interface Visitor {
+export interface CVisitor {
   visitor: Partial<{
-    [attr in SyntaxKind]: (node: Node) => void;
+    [attr in CSyntaxKind]: (node: CNode) => void;
   }>;
 }
 

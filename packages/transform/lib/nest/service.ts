@@ -22,7 +22,7 @@ import { TransformServiceOptions } from "../define";
 import { getTypeNodesImports, transformTypeNode } from "../helper";
 
 
-export function transformService(mod: types.Module): Statement[] {
+export function transformService(mod: types.CModule): Statement[] {
   const importNodes: ImportDeclaration[] = [];
   const defNodes: PropertyDeclaration[] = [];
   const decNodes: PropertyDeclaration[] = [];
@@ -31,12 +31,12 @@ export function transformService(mod: types.Module): Statement[] {
 
   const importItems: string[] = []; // 其余无规则import的集合，例如 import { xx,yy } from "zz"; ==>  [ xx, yy ]
   importNodes.push(...createHeaderImports());
-  const pkg = (mod.package as types.Identifier).escapedText;
+  const pkg = (mod.package as types.CIdentifier).escapedText;
 
   for (const node of mod.body) {
-    if (node.kind === define.SyntaxKind.ServiceDeclaration) {
-      const basename = (node as types.ServiceDeclaration).name.escapedText;
-      const { define, dec, init, members, imports } = createRpcService(node as types.ServiceDeclaration, {
+    if (node.kind === define.CSyntaxKind.ServiceDeclaration) {
+      const basename = (node as types.CServiceDeclaration).name.escapedText;
+      const { define, dec, init, members, imports } = createRpcService(node as types.CServiceDeclaration, {
         package: pkg,
         filename: mod.filename,
         filepath: mod.filepath,
@@ -189,7 +189,7 @@ export function createMainClass(def: PropertyDeclaration[], dec: PropertyDeclara
 }
 
 // 生成一个RPC Service，包含声明、装饰器、初始化
-export function createRpcService(svc: types.ServiceDeclaration, options: TransformServiceOptions) {
+export function createRpcService(svc: types.CServiceDeclaration, options: TransformServiceOptions) {
   const clientName = `${ options.serviceName }Client`;
   const imports = [ options.package ];  // 需要引入该 package
 
@@ -278,7 +278,7 @@ export function createRpcService(svc: types.ServiceDeclaration, options: Transfo
 }
 
 // 生成一个RPC函数
-export function createRpcMethod(med: types.FunctionDeclaration, options: TransformServiceOptions, imports: string[]): MethodDeclaration {
+export function createRpcMethod(med: types.CFunctionDeclaration, options: TransformServiceOptions, imports: string[]): MethodDeclaration {
   const paramsImport = getTypeNodesImports(med.parameters);
   if (paramsImport.imp) imports.push(paramsImport.text);
 

@@ -10,7 +10,7 @@ import {
 } from "typescript";
 import * as types from 'Parser/lib/types';
 
-export default function transformModule(node: types.Module): Statement {
+export default function transformModule(node: types.CModule): Statement {
   return factory.createClassDeclaration(
     [
       factory.createDecorator(

@@ -1,6 +1,6 @@
-import { Node } from 'Parser/lib/types';
+import { CNode } from 'Parser/lib/types';
 
 export function isNode(n: any): boolean {
-  return n instanceof Node;
+  return n instanceof CNode;
 }
 

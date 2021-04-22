@@ -1,19 +1,19 @@
 import { TokenType } from 'tokenizer/lib/define';
 import { ParserOptions } from './lib/define';
 import Parser from './lib/parser';
-import { EnumDeclaration, MessageDeclaration, Module, ServiceDeclaration } from './lib/types';
+import { CEnumDeclaration, CMessageDeclaration, CModule, CServiceDeclaration } from './lib/types';
 
 import { formatPath } from 'Common/lib/path';
-import { createIdentifier, createPropertyAccessExpression } from './lib/helper/factory';
+import { customCreateIdentifier, customCreatePropertyAccessExpression } from './lib/helper/factory';
 
-export function parse(options: ParserOptions): Module {
+export function parse(options: ParserOptions): CModule {
   const parser = new Parser(options);
 
-  const root = new Module(); // 模块根节点，认为每一个文件为一个模块
+  const root = new CModule(); // 模块根节点，认为每一个文件为一个模块
 
-  let serviceSyt: null | ServiceDeclaration = null; // 表示当前作为父级的Service节点，用于给Function节点赋值
-  let messageSyt: null | MessageDeclaration = null;
-  let enumSyt: null | EnumDeclaration = null;
+  let serviceSyt: null | CServiceDeclaration = null; // 表示当前作为父级的Service节点，用于给Function节点赋值
+  let messageSyt: null | CMessageDeclaration = null;
+  let enumSyt: null | CEnumDeclaration = null;
 
   let token = parser.next();
 
@@ -97,9 +97,9 @@ export function parse(options: ParserOptions): Module {
 
   const pkg = parser.package || formatPath(options.filename);
   if (pkg.includes('\.')) {
-    root.package = createPropertyAccessExpression(pkg);
+    root.package = customCreatePropertyAccessExpression(pkg);
   } else {
-    root.package = createIdentifier(pkg);
+    root.package = customCreateIdentifier(pkg);
   }
   return root;
 }

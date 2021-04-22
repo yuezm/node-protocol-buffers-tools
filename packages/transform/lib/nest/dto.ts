@@ -21,25 +21,25 @@ import { TransformDtoOptions } from 'Transform/lib/define';
 
 /**
  * 转换 DTO，关于DTO的话，只转换 message 定义
- * @param mod 
- * @returns 
+ * @param mod
+ * @returns
  */
-export function transformDto(mod: types.Module): Statement[] {
+export function transformDto(mod: types.CModule): Statement[] {
   const classes: Statement[] = [];
   const importNodes = createHeaderImports();
   const importItems: string[] = [];
 
   const options: TransformDtoOptions = {
-    package: (mod.package as types.Identifier).escapedText,
+    package: (mod.package as types.CIdentifier).escapedText,
     enumSet: new Set<string>(mod.enums),
     messageSet: new Set<string>(mod.messages),
   };
 
   for (const cn of mod.body) {
-    if (cn.kind === define.SyntaxKind.MessageDeclaration) {
+    if (cn.kind === define.CSyntaxKind.MessageDeclaration) {
       classes.push(
         transformMessage(
-          cn as types.MessageDeclaration,
+          cn as types.CMessageDeclaration,
           importItems,
           options,
         )
@@ -115,7 +115,7 @@ export function createHeaderImports(): ImportDeclaration[] {
   ]
 }
 
-export function transformMessage(msg: types.MessageDeclaration, imports: string[], options: TransformDtoOptions): ClassDeclaration {
+export function transformMessage(msg: types.CMessageDeclaration, imports: string[], options: TransformDtoOptions): ClassDeclaration {
   const body: ClassElement[] = [];
 
   for (const item of msg.members) {
@@ -147,19 +147,19 @@ export function transformMessage(msg: types.MessageDeclaration, imports: string[
   )
 }
 
-export function transformMessageItem(itm: types.MessageElement, imports: string[], options: TransformDtoOptions): ClassElement {
-  if (itm.type.kind === define.SyntaxKind.StringKeyWord) {
+export function transformMessageItem(itm: types.CMessageElement, imports: string[], options: TransformDtoOptions): ClassElement {
+  if (itm.type.kind === define.CSyntaxKind.StringKeyWord) {
     return createPropertyString(itm);
-  } else if (itm.type.kind === define.SyntaxKind.NumberKeyWord) {
+  } else if (itm.type.kind === define.CSyntaxKind.NumberKeyWord) {
     return createPropertyNumber(itm);
-  } else if (itm.type.kind === define.SyntaxKind.BooleanKeyWord) {
+  } else if (itm.type.kind === define.CSyntaxKind.BooleanKeyWord) {
     return createPropertyBoolean(itm);
   } else {
     return createRefProperty(itm, imports, options);
   }
 }
 
-export function createPropertyString(itm: types.MessageElement): PropertyDeclaration {
+export function createPropertyString(itm: types.CMessageElement): PropertyDeclaration {
   return createProperty(
     [
       factory.createDecorator(
@@ -180,7 +180,7 @@ export function createPropertyString(itm: types.MessageElement): PropertyDeclara
   )
 }
 
-export function createPropertyNumber(itm: types.MessageElement): PropertyDeclaration {
+export function createPropertyNumber(itm: types.CMessageElement): PropertyDeclaration {
   return createProperty(
     [
       factory.createDecorator(
@@ -212,7 +212,7 @@ export function createPropertyNumber(itm: types.MessageElement): PropertyDeclara
   )
 }
 
-export function createPropertyBoolean(itm: types.MessageElement): PropertyDeclaration {
+export function createPropertyBoolean(itm: types.CMessageElement): PropertyDeclaration {
   return createProperty(
     [
       factory.createDecorator(
@@ -236,12 +236,12 @@ export function createPropertyBoolean(itm: types.MessageElement): PropertyDeclar
 /**
  * 转换 message 内部的引用数据类型
  * @param itm
- * @param imports 
- * @param options 
- * @returns 
+ * @param imports
+ * @param options
+ * @returns
  */
-export function createRefProperty(itm: types.MessageElement, imports: string[], options: TransformDtoOptions): PropertyDeclaration {
-  const type = itm.type as types.TypeReferenceNode;
+export function createRefProperty(itm: types.CMessageElement, imports: string[], options: TransformDtoOptions): PropertyDeclaration {
+  const type = itm.type as types.CTypeReferenceNode;
   const typeNode = transformTypeNode(type);
 
   // 类型引入
@@ -260,9 +260,9 @@ export function createRefProperty(itm: types.MessageElement, imports: string[], 
     factory.createDecorator(createCall(factory.createIdentifier('Expose'), undefined, [])),
   ];
 
-  if (type.expression.kind === define.SyntaxKind.PropertyAccessExpression && (type.expression as types.PropertyAccessExpression).namespace === options.package) {
+  if (type.expression.kind === define.CSyntaxKind.PropertyAccessExpression && (type.expression as types.CPropertyAccessExpression).namespace === options.package) {
     // 加一个Type转换
-    const text = (type.expression as types.PropertyAccessExpression).name.escapedText;
+    const text = (type.expression as types.CPropertyAccessExpression).name.escapedText;
     const transformType = options.enumSet.has(text) ? 'Number' : `${text}Dto`;
 
     decorators.push(

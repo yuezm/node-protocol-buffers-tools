@@ -22,7 +22,7 @@ import {
 import * as types from 'Parser/lib/types';
 
 
-export function transformController(node: types.Module): Statement[] {
+export function transformController(node: types.CModule): Statement[] {
   const imports = createHeaderImports();
   const cls = createClassDeclaration();
 

@@ -1,14 +1,14 @@
-// 分隔符正则
-const DELIMITED_RE = /[\s{}=;:[\],'"()<>]/g;
+const DELIMITED_RE = /[\s{}=;:[\],'"()<>]/g; // 划界符正则，空白、{、}、=、;、:、[、]、,、'、"、(、)、<、>
 
 // 引号正则
-const STRING_DOUBLE_RE = /(?:"([^"\\]*(?:\\.[^"\\]*)*)")/g;
-const STRING_SINGLE_RE = /(?:'([^'\\]*(?:\\.[^'\\]*)*)')/g;
+const STRING_DOUBLE_RE = /(?:"([^"\\]*(?:\\.[^"\\]*)*)")/g; // 双引号正则
+const STRING_SINGLE_RE = /(?:'([^'\\]*(?:\\.[^'\\]*)*)')/g; // 单引号正则
 
 // 注释正则
 const SET_COMMENT_RE = /^ *[*/]+ */;
 const SET_COMMENT_ALT_RE = /^\s*\*?\/*/;
-const SET_COMMENT_SPLIT_RE = /\n/g;
+
+const SET_SPLIT_RE = /\n/g; // 换行符
 
 // 空格正则
 const WHITESPACE_RE = /\s/;
@@ -35,6 +35,7 @@ export default class Tokenizer {
 
   // 代码的位置
   offset: number;
+  lineOffset: number;
   length: number;
   line: number;
 
@@ -54,6 +55,7 @@ export default class Tokenizer {
     this.alternateCommentMode = alternateCommentMode;
 
     this.offset = 0;
+    this.lineOffset = 1;
     this.length = source.length;
     this.line = 1;
 
@@ -84,6 +86,24 @@ export default class Tokenizer {
     return Error("illegal " + subject + " (line " + this.line + ")");
   }
 
+  linePlus(): number {
+    this.line++;
+    this.lineOffset = 0;
+    return this.line;
+  }
+
+  offsetPlus(): number {
+    this.offset++;
+    this.lineOffset++;
+    return this.offset;
+  }
+
+  setOffsetValue(v: number): number {
+    this.lineOffset = this.lineOffset + v - this.offset;
+    this.offset = v;
+    return this.offset;
+  }
+
   // 读取一个字符串
   readString(): string {
     const re = this.stringDelimit === "'" ? STRING_SINGLE_RE : STRING_DOUBLE_RE;
@@ -91,8 +111,8 @@ export default class Tokenizer {
     const match = re.exec(this.source);
 
     if (!match) throw this.illegal("string");
-    this.offset = re.lastIndex;
-
+    // this.offset = re.lastIndex;
+    this.setOffsetValue(re.lastIndex);
     // 使用栈来记录是单引号还是双引号，并保持引号合并
     this.push(this.stringDelimit);
     this.stringDelimit = null;
@@ -125,12 +145,12 @@ export default class Tokenizer {
         break;
       }
     } while (c === " " || c === "\t");
-    const lines = this.source.substring(start, end).split(SET_COMMENT_SPLIT_RE);
 
+    const lines = this.source.substring(start, end).split(SET_SPLIT_RE);
     for (let i = 0; i < lines.length; ++i) {
       lines[i] = lines[i].replace(this.alternateCommentMode ? SET_COMMENT_ALT_RE : SET_COMMENT_RE, "").trim();
     }
-    this.commentText = lines.join("\n").trim();
+    return this.commentText = lines.join("\n").trim();
   }
 
   // 双斜线注释
@@ -158,7 +178,6 @@ export default class Tokenizer {
     if (this.stack.length > 0) return this.stack.shift();
     // 开始读取字符串
     if (this.stringDelimit !== null) return this.readString();
-
     let repeat = false;
     let prev: string;
     let curr: string;
@@ -176,27 +195,31 @@ export default class Tokenizer {
         // 取换行
         if (curr === "\n") {
           isLeadingComment = true;
-          ++this.line;
+          this.linePlus();
         }
-        if (++this.offset === this.length) return null;
+        // if (++this.offset === this.length) return null;
+        if (this.offsetPlus() === this.length) return null;
       }
 
       if (this.charAt(this.offset) === "/") {
-        if (++this.offset === this.length) throw this.illegal("comment");
+        // if (++this.offset === this.length) throw this.illegal("comment");
+        if (this.offsetPlus() === this.length) throw this.illegal("comment");
 
         if (this.charAt(this.offset) === "/") { // Line
           if (!this.alternateCommentMode) {
             // check for triple-slash comment
             isDoc = this.charAt(start = this.offset + 1) === "/";
 
-            while (this.charAt(++this.offset) !== "\n") {
+            // while (this.charAt(++this.offset) !== "\n") {
+            while (this.charAt(this.offsetPlus()) !== "\n") {
               if (this.offset === this.length) return null;
             }
-            ++this.offset;
+            // ++this.offset;
+            this.offsetPlus();
             if (isDoc) {
               this.setComment(start, this.offset - 1, isLeadingComment);
             }
-            ++this.line;
+            this.linePlus();
             repeat = true;
           } else {
             // check for double-slash comments, consolidating consecutive lines
@@ -206,19 +229,24 @@ export default class Tokenizer {
             if (this.isDoubleSlashCommentLine(this.offset)) {
               isDoc = true;
               do {
-                this.offset = this.findEndOfLine(this.offset);
+                const endOffset = this.findEndOfLine(this.offset);
+                if (this.source[endOffset] === '\n') {
+                  this.linePlus();
+                }
+                this.setOffsetValue(endOffset);
                 if (this.offset === this.length) {
                   break;
                 }
-                this.offset++;
+                this.offsetPlus();
               } while (this.isDoubleSlashCommentLine(this.offset));
             } else {
-              this.offset = Math.min(this.length, this.findEndOfLine(this.offset) + 1);
+              // this.offset = Math.min(this.length, this.findEndOfLine(this.offset) + 1);
+              this.setOffsetValue(Math.min(this.length, this.findEndOfLine(this.offset) + 1));
             }
             if (isDoc) {
               this.setComment(start, this.offset, isLeadingComment);
             }
-            this.line++;
+            // this.linePlus(); // 此处计算容易造成多斜线注释时的BUG
             repeat = true;
           }
         } else if ((curr = this.charAt(this.offset)) === "*") { /* Block */
@@ -227,15 +255,17 @@ export default class Tokenizer {
           isDoc = this.alternateCommentMode || this.charAt(start) === "*";
           do {
             if (curr === "\n") {
-              ++this.line;
+              this.linePlus();
             }
-            if (++this.offset === this.length) {
+            // if (++this.offset === this.length) {
+            if (this.offsetPlus() === this.length) {
               throw this.illegal("comment");
             }
             prev = curr;
             curr = this.charAt(this.offset);
           } while (prev !== "*" || curr !== "/");
-          ++this.offset;
+          // ++this.offset;
+          this.offsetPlus();
           if (isDoc) {
             this.setComment(start, this.offset - 2, isLeadingComment);
           }
@@ -245,7 +275,6 @@ export default class Tokenizer {
         }
       }
     } while (repeat);
-
     // offset !== length if we got here
 
     let end = this.offset;
@@ -257,52 +286,10 @@ export default class Tokenizer {
         ++end
       }
     }
-    const token = this.source.substring(this.offset, this.offset = end);
+    const token = this.source.substring(this.offset, this.setOffsetValue(end));
     if (token === "\"" || token === "'") {
       this.stringDelimit = token;
     }
-
     return token;
-  }
-
-  peek() {
-    if (!this.stack.length) {
-      const token = this.next();
-      if (token === null)
-        return null;
-      this.push(token);
-    }
-    return this.stack[0];
-  }
-
-  skip(expected: string, optional: boolean) {
-    const actual = this.peek();
-    const equals = actual === expected;
-    if (equals) {
-      this.next();
-      return true;
-    }
-    if (!optional) {
-      throw this.illegal("token '" + actual + "', '" + expected + "' expected");
-    }
-    return false;
-  }
-
-  cmnt(trailingLine: number): string | null {
-    let ret = null;
-    if (trailingLine === undefined) {
-      if (this.commentLine === this.line - 1 && (this.alternateCommentMode || this.commentType === "*" || this.commentLineEmpty)) {
-        ret = this.commentIsLeading ? this.commentText : null;
-      }
-    } else {
-      /* istanbul ignore else */
-      if (this.commentLine < trailingLine) {
-        this.peek();
-      }
-      if (this.commentLine === trailingLine && !this.commentLineEmpty && (this.alternateCommentMode || this.commentType === "/")) {
-        ret = this.commentIsLeading ? null : this.commentText;
-      }
-    }
-    return ret;
   }
 }

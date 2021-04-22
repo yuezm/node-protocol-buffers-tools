@@ -10,7 +10,7 @@ import transformModule from 'Transform/lib/nest/module';
 import { generate } from 'Generator/index';
 import { transformController } from 'Transform/lib/nest/controller';
 
-export function transform(node: types.Module): TransNestResult {
+export function transform(node: types.CModule): TransNestResult {
   return {
     module: generate(transformModule(node)),
     controller: generate(transformController(node)),

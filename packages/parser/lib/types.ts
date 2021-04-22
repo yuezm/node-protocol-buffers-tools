@@ -1,11 +1,11 @@
-import { KeyWordType, NodeFlags, SyntaxKind } from './define';
+import { CKeyWordType, CNodeFlags, CSyntaxKind } from './define';
 
 // 基本node，包含基础属性
-export class Node {
-  readonly kind: SyntaxKind; // 节点类型
+export class CNode {
+  readonly kind: CSyntaxKind; // 节点类型
 
-  parent: Node | null; // 父节点
-  flags: NodeFlags; // 节点特殊标记
+  parent: CNode | null; // 父节点
+  flags: CNodeFlags; // 节点特殊标记
 
   // 节点位于代码位置
   line: number;
@@ -13,7 +13,7 @@ export class Node {
 
   visited?: boolean;
 
-  constructor(kind: SyntaxKind, parent: Node | null = null, flags: NodeFlags = NodeFlags.Unknown) {
+  constructor(kind: CSyntaxKind, parent: CNode | null = null, flags: CNodeFlags = CNodeFlags.Unknown) {
     this.kind = kind;
     this.parent = parent;
     this.flags = flags;
@@ -21,9 +21,9 @@ export class Node {
 }
 
 // 模块，表示一个文件
-export class Module extends Node {
-  body: Node[]; // 当前模块文件的所有子节点
-  package: Identifier | PropertyAccessExpression;
+export class CModule extends CNode {
+  body: CNode[]; // 当前模块文件的所有子节点
+  package: CIdentifier | CPropertyAccessExpression;
   messages: string[];
   enums: string[];
 
@@ -36,94 +36,99 @@ export class Module extends Node {
   isMain = false; // 是否为主模块，还是依赖模块
 
 
-  constructor(body: Node[] = []) {
-    super(SyntaxKind.Module, null);
+  constructor(body: CNode[] = []) {
+    super(CSyntaxKind.Module, null);
     this.body = body;
   }
 
-  append(...child: Node[]): void {
+  append(...child: CNode[]): void {
     this.body.push(...child);
   }
 }
 
-// 声明
-export class ServiceDeclaration extends Node {
-  name: Identifier; // service 名称
-  members: FunctionDeclaration[]; // service内部函数
+// service 声明
+export class CServiceDeclaration extends CNode {
+  name: CIdentifier; // service 名称
+  members: CFunctionDeclaration[]; // service内部函数
 
-  constructor(name: Identifier, member: FunctionDeclaration[], parent: Node | null = null) {
-    super(SyntaxKind.ServiceDeclaration, parent);
+  constructor(name: CIdentifier, member: CFunctionDeclaration[], parent: CNode | null = null) {
+    super(CSyntaxKind.ServiceDeclaration, parent);
     this.members = member;
     this.name = name;
   }
 
-  append(child: FunctionDeclaration) {
+  append(child: CFunctionDeclaration) {
     this.members.push(child);
   }
 
 }
 
-export class FunctionDeclaration extends Node {
-  name: Identifier; // 函数名称
-  parameters: TypeNode; // 函数参数
-  returns: TypeNode; // 函数返回值
+// 函数申明
+export class CFunctionDeclaration extends CNode {
+  name: CIdentifier; // 函数名称
+  parameters: CTypeNode; // 函数参数
+  returns: CTypeNode; // 函数返回值
 
-  constructor(name: Identifier, parameters: TypeNode, returns: TypeNode, parent: Node | null = null) {
-    super(SyntaxKind.FunctionDeclaration, parent);
+  constructor(name: CIdentifier, parameters: CTypeNode, returns: CTypeNode, parent: CNode | null = null) {
+    super(CSyntaxKind.FunctionDeclaration, parent);
     this.name = name;
     this.parameters = parameters;
     this.returns = returns;
   }
 }
 
-export class MessageDeclaration extends Node {
-  name: Identifier;
-  members: MessageElement[];
+// message 声明
+export class CMessageDeclaration extends CNode {
+  name: CIdentifier;
+  members: CMessageElement[];
 
-  constructor(name: Identifier, members: MessageElement[], parent: Node | null = null) {
-    super(SyntaxKind.MessageDeclaration, parent);
+  constructor(name: CIdentifier, members: CMessageElement[], parent: CNode | null = null) {
+    super(CSyntaxKind.MessageDeclaration, parent);
     this.name = name;
     this.members = members;
   }
 
-  append(child: MessageElement) {
+  append(child: CMessageElement) {
     this.members.push(child);
   }
 }
 
-export class MessageElement extends Node {
-  name: Identifier;
-  type: TypeNode;
+// message 内部属性
+export class CMessageElement extends CNode {
+  name: CIdentifier;
+  type: CTypeNode;
 
-  constructor(name: Identifier, type: TypeNode, parent: Node) {
-    super(SyntaxKind.MessageElement, parent);
+  constructor(name: CIdentifier, type: CTypeNode, parent: CNode) {
+    super(CSyntaxKind.MessageElement, parent);
     this.name = name;
     this.type = type;
   }
 }
 
-export class EnumDeclaration extends Node {
-  name: Identifier;
-  members: EnumElement[];
+// 枚举 声明
+export class CEnumDeclaration extends CNode {
+  name: CIdentifier;
+  members: CEnumElement[];
 
-  constructor(name: Identifier, members: EnumElement[], parent: Node | null = null) {
-    super(SyntaxKind.EnumDeclaration, parent);
+  constructor(name: CIdentifier, members: CEnumElement[], parent: CNode | null = null) {
+    super(CSyntaxKind.EnumDeclaration, parent);
     this.name = name;
     this.members = members;
   }
 
-  append(child: EnumElement) {
+  append(child: CEnumElement) {
     this.members.push(child);
   }
 }
 
-export class EnumElement extends Node {
-  name: Identifier;
-  initializer: NumericLiteral;
-  type: TypeNode;
+// 枚举 内部属性
+export class CEnumElement extends CNode {
+  name: CIdentifier;
+  initializer: CNumericLiteral;
+  type: CTypeNode;
 
-  constructor(name: Identifier, type: TypeNode, initializer: NumericLiteral, parent: Node) {
-    super(SyntaxKind.EnumElement, parent);
+  constructor(name: CIdentifier, type: CTypeNode, initializer: CNumericLiteral, parent: CNode) {
+    super(CSyntaxKind.EnumElement, parent);
     this.name = name;
     this.initializer = initializer;
     this.type = type;
@@ -131,75 +136,80 @@ export class EnumElement extends Node {
 }
 
 // 表达式
-export abstract class Expression extends Node {
+export abstract class CExpression extends CNode {
 }
 
-export class ImportExpression extends Expression {
-  expression: Identifier;
+// import 表达式
+export class CImportExpression extends CExpression {
+  expression: CIdentifier;
 
-  constructor(expression: Identifier, parent: Node | null = null) {
-    super(SyntaxKind.ImportExpression, parent);
+  constructor(expression: CIdentifier, parent: CNode | null = null) {
+    super(CSyntaxKind.ImportExpression, parent);
     this.expression = expression;
   }
 }
 
-export class PropertyAccessExpression extends Expression {
-  name: Identifier;
-  expression: Identifier | PropertyAccessExpression;
+// 属性访问 表达式 xx.yy
+export class CPropertyAccessExpression extends CExpression {
+  name: CIdentifier;
+  expression: CIdentifier | CPropertyAccessExpression;
   namespace: string; // 该类型的命名空间，例如xx.yy.zz，命名空间为xx
 
-  constructor(expression: Identifier | PropertyAccessExpression, name: Identifier, parent: Node | null = null) {
-    super(SyntaxKind.PropertyAccessExpression, parent);
+  constructor(expression: CIdentifier | CPropertyAccessExpression, name: CIdentifier, parent: CNode | null = null) {
+    super(CSyntaxKind.PropertyAccessExpression, parent);
     this.name = name;
     this.expression = expression;
   }
 }
 
 // 标识符
-export class Identifier extends Node {
+export class CIdentifier extends CNode {
   escapedText: string; // 字面量
 
-  constructor(escapedText: string, parent: Node | null = null) {
-    super(SyntaxKind.Identifier, parent);
+  constructor(escapedText: string, parent: CNode | null = null) {
+    super(CSyntaxKind.Identifier, parent);
     this.escapedText = escapedText;
   }
 }
 
 // 类型
-export class TypeNode extends Node {
+export class CTypeNode extends CNode {
 }
 
-// 关键字类型，为ts原生类型，例如
-export class KeyWordTypeNode extends TypeNode {
-  constructor(kind: KeyWordType, parent: Node | null = null) {
+// 关键字类型，为ts原生类型，例如 number、string...
+export class CKeyWordTypeNode extends CTypeNode {
+  constructor(kind: CKeyWordType, parent: CNode | null = null) {
     super(kind, parent);
   }
 }
 
-export class TypeReferenceNode extends TypeNode {
-  expression: Identifier | PropertyAccessExpression;
+// 关键字类型，引用类型，例如以 message 声明为类型
+export class CTypeReferenceNode extends CTypeNode {
+  expression: CIdentifier | CPropertyAccessExpression;
 
-  constructor(expression: Identifier | PropertyAccessExpression, parent: Node | null = null) {
-    super(SyntaxKind.TypeReference, parent);
+  constructor(expression: CIdentifier | CPropertyAccessExpression, parent: CNode | null = null) {
+    super(CSyntaxKind.TypeReference, parent);
     this.expression = expression;
   }
 }
 
 // 字面量
-export abstract class Literal extends Node {
+export abstract class CLiteral extends CNode {
   text: string; // 字面量的值
 }
 
-export class StringLiteral extends Literal {
-  constructor(text: string, parent: Node | null = null) {
-    super(SyntaxKind.StringLiteral, parent);
+// 字符串字面量
+export class CStringLiteral extends CLiteral {
+  constructor(text: string, parent: CNode | null = null) {
+    super(CSyntaxKind.StringLiteral, parent);
     this.text = text;
   }
 }
 
-export class NumericLiteral extends Literal {
-  constructor(text: string, parent: Node | null = null) {
-    super(SyntaxKind.NumericLiteral, parent);
+// 数字字面量
+export class CNumericLiteral extends CLiteral {
+  constructor(text: string, parent: CNode | null = null) {
+    super(CSyntaxKind.NumericLiteral, parent);
     this.text = text;
   }
 }
