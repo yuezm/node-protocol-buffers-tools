@@ -4,6 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {},
+  "dependencies": {
+    "@med/node_pb_tool": ""
+  },
   "author": "",
   "license": "ISC"
 }

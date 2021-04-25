@@ -39,7 +39,7 @@ export default class Parser {
   offset: number;
 
   enums: string[];
-  messages: string[];
+  messages: string[]; // 存放所有的 message token value
 
   constructor(options: ParserOptions) {
     this.source = options.source;
@@ -72,11 +72,11 @@ export default class Parser {
 
   // 越过下一个匹配的Token
   skip(val: string): void {
-    if (this.source[this.offset].value === val) this.offset++;
+    if (this.now()?.value === val) this.offset++;
   }
 
   skipRe(val: RegExp): void {
-    if (val.test(this.source[this.offset].value)) this.offset++;
+    if (val.test(this.now()?.value)) this.offset++;
   }
 
   parseNumber(token: Token): CNumericLiteral {
@@ -98,7 +98,7 @@ export default class Parser {
     return syt;
   }
 
-  parseSyntax(): void {
+  parseSyntax(): string {
     // 根据 syntax 语法，跳过符号
     this.skip('=');
     this.skip('"');
@@ -107,6 +107,8 @@ export default class Parser {
 
     this.skip('"');
     this.skip(';');
+
+    return this.syntax;
   }
 
   parseService(): CServiceDeclaration {
@@ -204,6 +206,9 @@ export default class Parser {
     // 确定正负
     if (value.charAt(0) === '-') {
       sign = -1;
+      value = value.substring(1);
+    } else if (value.charAt(0) === '+') {
+      sign = 1;
       value = value.substring(1);
     }
 
