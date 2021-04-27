@@ -173,7 +173,7 @@ export class CIdentifier extends CNode {
 }
 
 // 类型
-export class CTypeNode extends CNode {
+export abstract class CTypeNode extends CNode {
 }
 
 // 关键字类型，为ts原生类型，例如 number、string...

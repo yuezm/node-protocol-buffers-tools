@@ -1,15 +1,10 @@
 import * as types from 'Parser/lib/types';
 import * as define from 'Parser/lib/define';
 
-import {
-  factory,
-  SyntaxKind,
-  TypeNode,
-  QualifiedName,
-} from 'typescript'
+import { factory, SyntaxKind, TypeNode, QualifiedName } from 'typescript'
 
 /**
- * 类型转换，特殊处理 xx.yy.zz
+ * xx.yy.zz 的类型转换 CPropertyAccessExpression ==> QualifiedName
  * @param node
  */
 export function transformPropertyAccessExpression(node: types.CPropertyAccessExpression): QualifiedName {
@@ -22,7 +17,7 @@ export function transformPropertyAccessExpression(node: types.CPropertyAccessExp
 }
 
 /**
- * 转换类型 基本类型、引用类型 {又分为 xx、xx.yy.zz}
+ * 转换类型 CTypeNode ==> TypeNode
  * @param n
  */
 export function transformTypeNode(n: types.CTypeNode): TypeNode {
@@ -53,7 +48,7 @@ export function transformTypeNode(n: types.CTypeNode): TypeNode {
 }
 
 
-// 判断当前是否需要从其他文件引入模块，例如对于 Test.Type ==> import { Test } from "xx";
+// 判断当前是否需要从其他文件引入模块，例如对于 test.Type ==> import { test } from "xx";
 export function getTypeNodesImports(n: types.CTypeNode): { imp: boolean, text?: string } {
   if (n.kind === define.CSyntaxKind.TypeReference && (n as types.CTypeReferenceNode).expression.kind === define.CSyntaxKind.PropertyAccessExpression) {
     const exp = (n as types.CTypeReferenceNode).expression as types.CPropertyAccessExpression;

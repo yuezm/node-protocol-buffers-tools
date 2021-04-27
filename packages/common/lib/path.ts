@@ -1,8 +1,7 @@
 const SLASH_RE = /\//g;
+import { parse } from 'path';
 
 export function formatPath(filepath: string): string {
-  if (filepath.endsWith('.proto')) {
-    filepath = filepath.replace('.proto', '');
-  }
+  filepath = filepath.replace(parse(filepath).ext, '');
   return filepath.replace(SLASH_RE, '_');
 }

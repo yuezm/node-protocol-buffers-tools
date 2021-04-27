@@ -1,5 +1,5 @@
 /**
- * 将自定义的 AST --> typescript AST，生成AST定义
+ * 将自定义的 AST --> typescript AST，生成AST定义，此处仅仅是定义，而非实际的代码
  */
 
 import * as types from 'Parser/lib/types';
@@ -19,6 +19,8 @@ import {
   PropertySignature,
   TypeNode,
   ImportDeclaration,
+  EnumDeclaration,
+  ModuleDeclaration,
 } from 'typescript'
 import { transformTypeNode } from 'Transform/lib/helper';
 
@@ -30,7 +32,7 @@ import { transformTypeNode } from 'Transform/lib/helper';
 export function transform(mods: types.CModule[]): Statement[] {
   const nodes: Statement[] = [];
   for (const mod of mods) {
-    nodes.push(...transformModuleDeclaration(mod));
+    nodes.push(transformModuleDeclaration(mod));
   }
   nodes.unshift(...createHeaderImports());
   return nodes;
@@ -85,7 +87,7 @@ export function createHeaderImports(): ImportDeclaration[] {
  * 转换 Module ==> Namespace
  * @param node {types.Module} 自定义的 Module AST
  */
-function transformModuleDeclaration(node: types.CModule): Statement[] {
+export function transformModuleDeclaration(node: types.CModule): ModuleDeclaration {
   const body: Statement[] = [];
 
   for (const cn of node.body) {
@@ -114,24 +116,20 @@ function transformModuleDeclaration(node: types.CModule): Statement[] {
     pkg = (node.package as types.CIdentifier).escapedText;
   }
 
-
-  // 其实需要加入 rxjs 和 grpc
-  return [
-    factory.createModuleDeclaration(
-      undefined,
-      [ factory.createModifier(SyntaxKind.ExportKeyword) ],
-      factory.createIdentifier(pkg),
-      factory.createModuleBlock(finalBody),
-      NodeFlags.Namespace
-    )
-  ];
+  return factory.createModuleDeclaration(
+    undefined,
+    [ factory.createModifier(SyntaxKind.ExportKeyword) ],
+    factory.createIdentifier(pkg),
+    factory.createModuleBlock(finalBody),
+    NodeFlags.Namespace
+  )
 }
 
 /**
  * 此处将 service 和 message 转换为 interface
  * @param node
  */
-function transformInterfaceDeclaration(node: types.CServiceDeclaration | types.CMessageDeclaration): InterfaceDeclaration {
+export function transformInterfaceDeclaration(node: types.CServiceDeclaration | types.CMessageDeclaration): InterfaceDeclaration {
   const fns = [];
   const props = [];
 
@@ -140,8 +138,6 @@ function transformInterfaceDeclaration(node: types.CServiceDeclaration | types.C
       fns.push(transformFunctionSignature(member as types.CFunctionDeclaration));
     } else if (member.kind === define.CSyntaxKind.MessageElement) {
       props.push(transformPropertySignature(member as types.CMessageElement));
-    } else {
-      console.log('else kind', member);
     }
   }
 
@@ -159,7 +155,7 @@ function transformInterfaceDeclaration(node: types.CServiceDeclaration | types.C
  * 枚举转换
  * @param node
  */
-function transformEnumDeclaration(node: types.CEnumDeclaration) {
+export function transformEnumDeclaration(node: types.CEnumDeclaration): EnumDeclaration {
   const body = [];
   for (const member of node.members) {
     body.push(factory.createEnumMember(
@@ -175,7 +171,7 @@ function transformEnumDeclaration(node: types.CEnumDeclaration) {
  * 创建 interface 中的函数定义
  * @param node
  */
-function transformFunctionSignature(node: types.CFunctionDeclaration): MethodSignature {
+export function transformFunctionSignature(node: types.CFunctionDeclaration): MethodSignature {
   return createMethodSignature(
     undefined,
     [
@@ -214,7 +210,7 @@ function transformFunctionSignature(node: types.CFunctionDeclaration): MethodSig
 /**
  * 创建interface中的属性定义
  */
-function transformPropertySignature(node: types.CMessageElement): PropertySignature {
+export function transformPropertySignature(node: types.CMessageElement): PropertySignature {
   const types: TypeNode[] = [
     transformTypeNode(node.type),
     // @ts-ignore

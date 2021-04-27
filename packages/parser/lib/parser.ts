@@ -19,15 +19,10 @@ import {
 
 
 const BASE_10_RE = /^[1-9][0-9]*$/;
-const BASE_10_NEG_RE = /^-?[1-9][0-9]*$/;
 const BASE_16_RE = /^0[x][0-9a-fA-F]+$/;
-const BASE_16_NEG_RE = /^-?0[x][0-9a-fA-F]+$/;
 const BASE_8_RE = /^0[0-7]+$/;
-const BASE_8_NEG_RE = /^-?0[0-7]+$/;
 const NUMBER_RE = /^(?![eE])[0-9]*(?:\.[0-9]*)?(?:[eE][+-]?[0-9]+)?$/;
-const NAME_RE = /^[a-zA-Z_][a-zA-Z_0-9]*$/;
 const TYPE_REF_RE = /^(?:\.?[a-zA-Z_][a-zA-Z_0-9]*)(?:\.[a-zA-Z_][a-zA-Z_0-9]*)*$/;
-const FQ_TYPE_REF_RE = /^(?:\.[a-zA-Z_][a-zA-Z_0-9]*)+$/;
 
 export default class Parser {
   source: Token[];
