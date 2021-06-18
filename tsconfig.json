@@ -15,23 +15,6 @@
     "moduleResolution": "Node",
     "lib": [
       "ESNext"
-    ],
-    "paths": {
-      "Common/*": [
-        "packages/common/*"
-      ],
-      "Transform/*": [
-        "packages/transform/*"
-      ],
-      "Parser/*": [
-        "packages/parser/*"
-      ],
-      "Tokenizer/*": [
-        "packages/tokenizer/*"
-      ],
-      "Generator/*": [
-        "packages/generator/*"
-      ]
-    }
+    ]
   }
 }

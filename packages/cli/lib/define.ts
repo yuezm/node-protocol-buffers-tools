@@ -1,4 +1,4 @@
-import { TransNestResult } from 'Transform/lib/define';
+import { TransNestResult } from 'packages/cli/lib/transform/define';
 
 export interface CliOptions {
   readonly entry: string, // 入口文件
@@ -7,5 +7,5 @@ export interface CliOptions {
 
 
 export interface CliResult extends TransNestResult {
-  statement: string;
+  statement?: string;
 }

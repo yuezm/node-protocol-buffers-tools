@@ -1,5 +1,6 @@
 const { pathsToModuleNameMapper } = require('ts-jest/utils');
 const { compilerOptions } = require('./tsconfig.json');
+
 module.exports = {
   "testEnvironment": "node",
   "preset": "ts-jest",
@@ -13,6 +14,7 @@ module.exports = {
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
+  modulePathIgnorePatterns: [ "dist/" ],
   "collectCoverageFrom": [
     "**/*.(t|j)s"
   ],

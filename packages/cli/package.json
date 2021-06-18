@@ -16,6 +16,9 @@
   "publishConfig": {
     "registry": "https://registry.npm.taobao.org/"
   },
+  "dependencies": {
+    "@node_pb_tool/core": "^0.1.0"
+  },
   "repository": {
     "type": "git",
     "url": "https://git.medlinker.com/yuezhiming/node_pb_tool.git"

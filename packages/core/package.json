@@ -1,0 +1,26 @@
+{
+  "name": "@node_pb_tool/core",
+  "version": "0.1.0",
+  "description": "node_pb_tool核心解析器",
+  "author": "keven <yuezmkeven@gmail.com>",
+  "homepage": "",
+  "license": "ISC",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "directories": {
+    "lib": "lib",
+    "test": "__tests__"
+  },
+  "files": [
+    "lib"
+  ],
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "scripts": {
+    "build": "tsc ",
+    "test": "jest",
+    "test:cov": "jest --coverage"
+  }
+}
